@@ -502,6 +502,40 @@ function renderScreen(scr, palName, S) {
   const px0 = 10, pw = 220, py0 = Y_PANEL, ph = H_PANEL;
   const title = () => { let y = py0 + 16; if (p.title) { text(p.title, px0, y, 15, P.THEME, "left", 600); if (p.subtitle) text(fit(p.subtitle, 11, pw - tw(p.title, 15, 600) - 8), px0 + tw(p.title, 15, 600) + 6, y, 11, P.MID); y += 8; } return y; };
 
+  /* a params glyph (knob bar env wave saw square filter steps dots) in a cw x gh box at (x, gy); lk scales the line widths */
+  function drawGlyph(c, x, gy, cw, gh, col, pct, lk) {
+    const cx = x + cw / 2;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.5 * lk; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    const g = c.glyph || "knob";
+    if (g === "env") { const e = c.env || [0.2, 0.3, 0.6, 0.3], w = cw - 10, bx = x + 5, by = gy + gh - 6;
+      const ax = bx + w * 0.3 * e[0], dx = ax + w * 0.3 * e[1], sx = bx + w * 0.72, rx = sx + w * 0.28 * e[3], sy = by - (gh - 14) * e[2];
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ax, gy + 8); ctx.lineTo(dx, sy); ctx.lineTo(sx, sy); ctx.lineTo(rx, by); ctx.stroke(); }
+    else if (g === "wave") { ctx.beginPath(); for (let k = 0; k <= 44; k++) { const t = k / 44, xx = x + 6 + t * (cw - 12), yy = gy + gh / 2 - Math.sin(t * Math.PI * 2 * (c.cycles || 2)) * (gh / 2 - 10) * (0.3 + 0.7 * pct); k ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.stroke(); }
+    else if (g === "saw") { ctx.beginPath(); for (let k = 0; k < (c.cycles || 2); k++) { const w = (cw - 12) / (c.cycles || 2), xx = x + 6 + k * w; ctx.moveTo(xx, gy + gh - 10); ctx.lineTo(xx + w, gy + 10); ctx.lineTo(xx + w, gy + gh - 10); } ctx.stroke(); }
+    else if (g === "square") { ctx.beginPath(); const n = c.cycles || 2, w = (cw - 12) / n; for (let k = 0; k < n; k++) { const xx = x + 6 + k * w; ctx.moveTo(xx, gy + gh - 10); ctx.lineTo(xx, gy + 10); ctx.lineTo(xx + w * pct, gy + 10); ctx.lineTo(xx + w * pct, gy + gh - 10); ctx.lineTo(xx + w, gy + gh - 10); } ctx.stroke(); }
+    else if (g === "filter") { const fx = x + 6 + (cw - 12) * pct; ctx.beginPath(); ctx.moveTo(x + 6, gy + 18); ctx.lineTo(fx - 8, gy + 18); ctx.quadraticCurveTo(fx, gy + 18, fx + 2, gy + 10); ctx.quadraticCurveTo(fx + 6, gy + gh - 8, fx + 16, gy + gh - 8); ctx.stroke(); ctx.setLineDash([2, 3]); ctx.strokeStyle = P.MID; ctx.lineWidth = 1 * lk; ctx.beginPath(); ctx.moveTo(x + 6, gy + 18); ctx.lineTo(x + cw - 6, gy + 18); ctx.stroke(); ctx.setLineDash([]); }
+    else if (g === "bar") { const bh = (gh - 8) * pct; ctx.strokeStyle = P.LINE; ctx.lineWidth = 1 * lk; for (let k = 0; k < 7; k++) { const yy = gy + 4 + k * (gh - 8) / 6; ctx.beginPath(); ctx.moveTo(cx - 10, yy); ctx.lineTo(cx + 10, yy); ctx.stroke(); } rr(cx - 9, gy + gh - 4 - bh, 18, bh, 3, col); }
+    else if (g === "steps") { const n = c.n || 8, w = (cw - 10) / n; for (let k = 0; k < n; k++) rr(x + 5 + k * w + 1, gy + gh - 6 - (gh - 14) * (((k * 7) % 11) / 11), w - 2, 3, 1, k / n <= pct ? col : P.LINE); }
+    else if (g === "dots") { const n = Math.round(1 + pct * 11); for (let k = 0; k < 12; k++) { const a = -Math.PI / 2 + k * Math.PI / 6; ctx.beginPath(); ctx.arc(cx + 20 * Math.cos(a), gy + gh / 2 + 20 * Math.sin(a), k < n ? 3.5 : 2, 0, Math.PI * 2); ctx.fillStyle = k < n ? col : P.LINE; ctx.fill(); } }
+    else { // knob: a 270-degree arc with its pointer
+      const r = 20, kcx = cx, kcy = gy + gh / 2, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, a = a0 + (a1 - a0) * pct;
+      ctx.strokeStyle = P.LINE; ctx.lineWidth = 4 * lk; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a1); ctx.stroke();
+      ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a); ctx.stroke();
+      ctx.lineWidth = 3 * lk; ctx.beginPath(); ctx.moveTo(kcx + 6 * Math.cos(a), kcy + 6 * Math.sin(a)); ctx.lineTo(kcx + (r - 6) * Math.cos(a), kcy + (r - 6) * Math.sin(a)); ctx.stroke(); }
+    ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+  }
+  /* one oscillator wave (SAW SQR TRI SIN PWM NOIS) as a polyline over cycles periods in a w x h box;
+     shape = PWM duty / TRI peak position (0-1) */
+  function waveShape(x, y, w, h, wave, shape, cycles, col, lw) {
+    const W = String(wave || "SIN").toUpperCase(), sh = Math.max(0, Math.min(1, Number(shape) || 0)), duty = 0.05 + 0.9 * sh;
+    const f = (t, i) => W === "SAW" ? 2 * t - 1 : W === "SQR" ? (t < 0.5 ? 1 : -1) : W === "PWM" ? (t < duty ? 1 : -1)
+      : W === "TRI" ? (t < duty ? -1 + 2 * t / duty : 1 - 2 * (t - duty) / (1 - duty))
+      : W.startsWith("NOI") ? ((Math.abs(Math.sin(Math.floor(i / 4) * 12.9898) * 43758.5453) % 1) * 2 - 1) : Math.sin(t * Math.PI * 2);
+    const n = Math.max(8, Math.ceil(w * 2)), cy = y + h / 2, amp = h / 2 - lw / 2;
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.beginPath();
+    for (let i = 0; i <= n; i++) { const u = i / n * cycles, t = i === n ? 1 - 1e-9 : u - Math.floor(u), xx = x + w * i / n, yy = cy - f(t, i) * amp; i ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); }
+    ctx.stroke(); ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+  }
   function drawKeyboard(y, h, lit, labels) {
     // 16 white keys across 224 px, black keys 9 px wide in their true slots
     const ww = 224 / 16, x0 = 8, bw = 8, bh = h * 0.6;
@@ -760,28 +794,144 @@ function renderScreen(scr, palName, S) {
     cols.slice(0, 4).forEach((c, i) => {
       if (!c) return;
       const col = colOf(P, c.col || KC[i], P.TEXT), x = x0 + i * (cw + 2), cx = x + cw / 2, pct = Math.max(0, Math.min(1, Number(c.pct ?? 0.5)));
-      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.5; ctx.lineJoin = "round"; ctx.lineCap = "round";
-      const g = c.glyph || "knob";
-      if (g === "env") { const e = c.env || [0.2, 0.3, 0.6, 0.3], w = cw - 10, bx = x + 5, by = gy + gh - 6;
-        const ax = bx + w * 0.3 * e[0], dx = ax + w * 0.3 * e[1], sx = bx + w * 0.72, rx = sx + w * 0.28 * e[3], sy = by - (gh - 14) * e[2];
-        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ax, gy + 8); ctx.lineTo(dx, sy); ctx.lineTo(sx, sy); ctx.lineTo(rx, by); ctx.stroke(); }
-      else if (g === "wave") { ctx.beginPath(); for (let k = 0; k <= 44; k++) { const t = k / 44, xx = x + 6 + t * (cw - 12), yy = gy + gh / 2 - Math.sin(t * Math.PI * 2 * (c.cycles || 2)) * (gh / 2 - 10) * (0.3 + 0.7 * pct); k ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.stroke(); }
-      else if (g === "saw") { ctx.beginPath(); for (let k = 0; k < (c.cycles || 2); k++) { const w = (cw - 12) / (c.cycles || 2), xx = x + 6 + k * w; ctx.moveTo(xx, gy + gh - 10); ctx.lineTo(xx + w, gy + 10); ctx.lineTo(xx + w, gy + gh - 10); } ctx.stroke(); }
-      else if (g === "square") { ctx.beginPath(); const n = c.cycles || 2, w = (cw - 12) / n; for (let k = 0; k < n; k++) { const xx = x + 6 + k * w; ctx.moveTo(xx, gy + gh - 10); ctx.lineTo(xx, gy + 10); ctx.lineTo(xx + w * pct, gy + 10); ctx.lineTo(xx + w * pct, gy + gh - 10); ctx.lineTo(xx + w, gy + gh - 10); } ctx.stroke(); }
-      else if (g === "filter") { const fx = x + 6 + (cw - 12) * pct; ctx.beginPath(); ctx.moveTo(x + 6, gy + 18); ctx.lineTo(fx - 8, gy + 18); ctx.quadraticCurveTo(fx, gy + 18, fx + 2, gy + 10); ctx.quadraticCurveTo(fx + 6, gy + gh - 8, fx + 16, gy + gh - 8); ctx.stroke(); ctx.setLineDash([2, 3]); ctx.strokeStyle = P.MID; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 6, gy + 18); ctx.lineTo(x + cw - 6, gy + 18); ctx.stroke(); ctx.setLineDash([]); }
-      else if (g === "bar") { const bh = (gh - 8) * pct; ctx.strokeStyle = P.LINE; ctx.lineWidth = 1; for (let k = 0; k < 7; k++) { const yy = gy + 4 + k * (gh - 8) / 6; ctx.beginPath(); ctx.moveTo(cx - 10, yy); ctx.lineTo(cx + 10, yy); ctx.stroke(); } rr(cx - 9, gy + gh - 4 - bh, 18, bh, 3, col); }
-      else if (g === "steps") { const n = c.n || 8, w = (cw - 10) / n; for (let k = 0; k < n; k++) rr(x + 5 + k * w + 1, gy + gh - 6 - (gh - 14) * (((k * 7) % 11) / 11), w - 2, 3, 1, k / n <= pct ? col : P.LINE); }
-      else if (g === "dots") { const n = Math.round(1 + pct * 11); for (let k = 0; k < 12; k++) { const a = -Math.PI / 2 + k * Math.PI / 6; ctx.beginPath(); ctx.arc(cx + 20 * Math.cos(a), gy + gh / 2 + 20 * Math.sin(a), k < n ? 3.5 : 2, 0, Math.PI * 2); ctx.fillStyle = k < n ? col : P.LINE; ctx.fill(); } }
-      else { // knob: a 270-degree arc with its pointer
-        const r = 20, kcx = cx, kcy = gy + gh / 2, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, a = a0 + (a1 - a0) * pct;
-        ctx.strokeStyle = P.LINE; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a1); ctx.stroke();
-        ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a); ctx.stroke();
-        ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(kcx + 6 * Math.cos(a), kcy + 6 * Math.sin(a)); ctx.lineTo(kcx + (r - 6) * Math.cos(a), kcy + (r - 6) * Math.sin(a)); ctx.stroke(); }
-      ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+      drawGlyph(c, x, gy, cw, gh, col, pct, 1);
       text(fit(c.label || "", 11, cw - 2, 600), cx, gy + gh + 14, 11, P.MID, "center", 600);
       text(fit(String(c.value ?? ""), 15, cw - 2, 700), cx, gy + gh + 33, 15, col, "center", 700);
     });
     if (p.foot) text(p.foot, 120, py0 + ph - 8, 11, P.MID, "center", 500);
+  } else if (kind === "edit8" || kind === "stack") {
+    // the dense sound editor: up to 8 parameters (edit8: a wide graphic over two rows of four) or a stack of
+    // N rows of four (stack). The layout is designed for the full 240 px screen (header / cards / footer null);
+    // with a header, cards or footer it is squeezed vertically into the panel.
+    const top = scr.header === null && !hasCards ? 0 : py0, ys = (py0 + ph - top) / 240, Y = v => top + v * ys;
+    const KC = [colOf(P, "blue", P.THEME), colOf(P, "orange", P.ACCENT), colOf(P, "white", P.TEXT), colOf(P, "green", colOf(P, "mint", P.THEME))];
+    const cc = (c, i) => colOf(P, c && c.col, KC[i % 4]);
+    const clamp01 = v => Math.max(0, Math.min(1, Number(v) || 0));
+    const hot = Array.isArray(p.hot) && p.hot.length === 2 ? p.hot.map(Number) : null, act = Number(p.active ?? 0);
+    // a cell glyph: a wave shape (cell.wave) or a params glyph scaled into a w x h box
+    const cellGlyph = (c, x, y, w, h, col) => {
+      if (c.glyph === "none" || (!c.glyph && !c.wave)) return;
+      if (c.wave) { waveShape(x, y, w, h, c.wave, c.shape ?? 0.5, c.cycles || 1, col, 2); return; }
+      if (c.bipolar && c.glyph === "bar") {   // centre-zero vertical bar: pct 0.5 = zero
+        const bw = Math.min(14, w * 0.4), bx = x + w / 2 - bw / 2, m = y + h / 2, v = (clamp01(c.pct ?? 0.5) - 0.5) * h;
+        rr(bx, y, bw, h, 2, P.LINE); ctx.fillStyle = col; ctx.fillRect(bx, Math.min(m, m - v), bw, Math.abs(v));
+        ctx.fillRect(bx - 3, m - 0.5, bw + 6, 1); return; }
+      const s = h / 64;
+      ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+      drawGlyph(c, 0, 0, w / s, 64, col, clamp01(c.pct ?? 0.5), 0.8 / s);
+      ctx.restore();
+    };
+    // the value, on a filled block when hot
+    const cellValue = (c, cx, vy, w, vpx, col, isHot) => {
+      const v = fit(String(c.value ?? ""), vpx, w - 6, 700);
+      if (isHot) rr(cx - w / 2 + 3, vy - vpx - 1, w - 6, vpx + 5, 2, col);
+      text(v, cx, vy, vpx, isHot ? P.BG : col, "center", 700);
+    };
+    // a small horizontal pct bar: from the left, or centre-zero when bipolar (pct 0.5 = zero)
+    const hbar = (c, x, w, by, bh, col) => {
+      if (c.pct == null) return;
+      ctx.fillStyle = P.LINE; ctx.fillRect(x, by, w, bh);
+      if (c.bipolar) { const m = x + w / 2, v = (clamp01(c.pct) - 0.5) * w;
+        ctx.fillRect(m - 0.5, by - 2, 1, bh + 4); ctx.fillStyle = col; ctx.fillRect(Math.min(m, m + v), by, Math.abs(v), bh); ctx.fillRect(m - 0.5, by - 2, 1, bh + 4); }
+      else { ctx.fillStyle = col; ctx.fillRect(x, by, w * clamp01(c.pct), bh); }
+    };
+    // the title line (0-24): title left, white 13 px bold; right right-aligned 11 px grey
+    const rw = p.right ? tw(p.right, 11, 600) : 0;
+    if (p.right) text(p.right, 232, Y(17), 11, P.MID, "right", 600);
+    if (p.title) text(fit(p.title, 13, 224 - rw - (rw ? 8 : 0), 700), 8, Y(17), 13, colOf(P, p.titleCol, P.TEXT), "left", 700);
+
+    if (kind === "edit8") {
+      const wide = p.wide && typeof p.wide === "object" ? p.wide : null;
+      const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 2);
+      if (wide) drawWide(wide, Y(24), Y(120), rows);
+      const big = !wide, rowY = wide ? [124, 184] : [30, 134], rowH = wide ? 56 : 100;
+      rows.forEach((row, ri) => {
+        const y = Y(rowY[ri]), h = rowH * ys, on = ri === act;
+        (Array.isArray(row) ? row : []).slice(0, 4).forEach((c, ci) => {
+          if (!c) return;
+          const x = ci * 60, w = 60, cx = x + w / 2, col = on ? cc(c, ci) : P.DIM, isHot = !!hot && hot[0] === ri && hot[1] === ci;
+          const lpx = big ? 12 : 10, vpx = big ? 17 : 13, gh = (big ? 34 : 22) * ys;
+          const ly = y + (big ? 16 : 11) * ys, gy = y + (big ? 26 : 15) * ys, vy = y + (big ? 82 : 51) * ys;
+          text(fit(c.label || "", lpx, w - 4, 600), cx, ly, lpx, col, "center", 600);
+          if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, x + 5, gy, w - 10, gh, col);
+          else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
+          cellValue(c, cx, vy, w, vpx, col, isHot);
+          if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + h - 2, w - 8, 2); }
+        });
+      });
+    } else {
+      // stack: N (1-8) equal rows of four under column headings; a row label column when any row has a label
+      const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 8), N = Math.max(1, rows.length);
+      const labW = Math.max(0, ...rows.map(r => r && r.label ? tw(r.label, 11, 700) : 0)), lw = labW ? Math.min(44, Math.ceil(labW) + 12) : 0, cw = (240 - lw) / 4;
+      (p.cols || []).slice(0, 4).forEach((h, j) => { if (h) text(fit(h, 10, cw - 4, 600), lw + j * cw + cw / 2, Y(36), 10, P.DIM, "center", 600); });
+      const r0 = Y(41), rh = (Y(239) - r0) / N, compact = rh < 30;
+      rows.forEach((row, ri) => {
+        const y = r0 + ri * rh, on = ri === act;
+        if (ri) { ctx.fillStyle = P.LINE; ctx.fillRect(4, y - 0.5, 232, 1); }
+        if (row && row.label) text(fit(row.label, 11, lw - 6, 700), 6, y + rh / 2 + 4, 11, on ? P.TEXT : P.DIM, "left", 700);
+        ((row && row.cells) || []).slice(0, 4).forEach((c, ci) => {
+          if (!c) return;
+          const x = lw + ci * cw, cx = x + cw / 2, col = on ? cc(c, ci) : P.DIM, isHot = !!hot && hot[0] === ri && hot[1] === ci;
+          const bar = (by, bh) => hbar(c, x + 6, cw - 12, by, bh, col);
+          if (compact) {   // ~24 px rows (the mod matrix): text only, a thin bar
+            cellValue(c, cx, y + 14, cw, 12, col, isHot);
+            bar(y + 17.5, 2);
+          } else if (c.wave || (c.glyph && c.glyph !== "none" && c.glyph !== "bar")) {   // a glyph cell (bar = text + bar)
+            const showV = rh >= 44 && c.value != null && c.value !== "", gh = showV ? Math.min(rh - 24, 40) : Math.min(rh - 10, 40);
+            cellGlyph(c, x + 6, y + 4 + (showV ? 0 : (rh - 10 - gh) / 2), cw - 12, gh, col);
+            if (showV) cellValue(c, cx, y + 4 + gh + 14, cw, 11, col, isHot);
+          } else {
+            const vpx = rh >= 45 ? 15 : 13, vy = y + rh / 2 + vpx / 2 - 3;
+            cellValue(c, cx, vy, cw, vpx, col, isHot);
+            bar(vy + 5, 3);
+          }
+          if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + rh - 3, cw - 8, 2); }
+        });
+      });
+    }
+
+    // the wide band: one AHDSR envelope, a filter response or two cycles of a wave, across the screen
+    function drawWide(wd, y0, y1, rows) {
+      const L = 8, R = 232, W = R - L, H = y1 - y0, kk = H / 96;
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      if (wd.type === "env") {
+        const v = ["a", "h", "d", "s", "r"].map(n => clamp01(wd[n] ?? (n === "s" ? 0.7 : 0.2))), seg = Math.round(Number(wd.seg ?? -1));
+        const u = [0.06 + v[0], v[1], 0.06 + v[2], 0.3, 0.06 + v[4]], sum = u.reduce((a, b) => a + b, 0);
+        const yT = y0 + 8 * kk, yB = y0 + 84 * kk, yS = yB - (yB - yT) * v[3];
+        const xs = [L]; u.forEach(w => xs.push(xs[xs.length - 1] + w * W / sum));
+        const pts = [[xs[0], yB], [xs[1], yT], [xs[2], yT], [xs[3], yS], [xs[4], yS], [xs[5], yB]];
+        const hc = hot && rows[hot[0]] ? rows[hot[0]][hot[1]] : null;
+        const segCol = wd.col ? colOf(P, wd.col, KC[0]) : hc ? cc(hc, hot[1]) : KC[(seg >= 0 ? seg : 0) % 4];
+        ctx.fillStyle = P.LINE; ctx.fillRect(L, yB + 1, W, 1);
+        ctx.strokeStyle = P.TEXT; ctx.lineWidth = 3; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+        if (seg >= 0 && seg <= 4) {
+          ctx.strokeStyle = segCol; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(pts[seg][0], pts[seg][1]); ctx.lineTo(pts[seg + 1][0], pts[seg + 1][1]); ctx.stroke();
+          [pts[seg], pts[seg + 1]].forEach(q => { ctx.fillStyle = segCol; ctx.beginPath(); ctx.arc(q[0], q[1], 3.5, 0, Math.PI * 2); ctx.fill(); });
+        }
+        ["A", "H", "D", "S", "R"].forEach((n, i) => { if (xs[i + 1] - xs[i] < 1 && i !== seg) return;
+          text(n, (xs[i] + xs[i + 1]) / 2, y0 + 95 * kk, 9, i === seg ? segCol : P.DIM, "center", 700); });
+      } else if (wd.type === "filter") {
+        const cut = clamp01(wd.cut ?? 0.5), res = clamp01(wd.res ?? 0), drive = clamp01(wd.drive ?? 0), ft = String(wd.ftype || "LP").toUpperCase();
+        const Q = 0.6 + res * 7, y0db = y0 + 38 * kk, k = 1.4 * kk, yMin = y0 + 4 * kk, yMax = y0 + 90 * kk;
+        ctx.strokeStyle = P.MID; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(L, y0db); ctx.lineTo(R, y0db); ctx.stroke(); ctx.setLineDash([]);
+        ctx.strokeStyle = colOf(P, wd.col, KC[1]); ctx.lineWidth = 3; ctx.beginPath();
+        for (let i = 0; i <= W; i++) {
+          const w = Math.pow(2, (i / W - cut) * 9), den = Math.sqrt((1 - w * w) ** 2 + (w / Q) ** 2);
+          let g = ft === "HP" ? w * w / den : ft === "BP" ? (w / Q) / den * Math.sqrt(Q / 0.6) : ft === "NOTCH" ? Math.abs(1 - w * w) / den : 1 / den;
+          const db = 20 * Math.log10(Math.max(g, 1e-4)) + drive * 6, yy = Math.max(yMin, Math.min(yMax, y0db - db * k));
+          i ? ctx.lineTo(L + i, yy) : ctx.moveTo(L + i, yy);
+        }
+        ctx.stroke();
+        text(ft, L, y0 + 12 * kk, 10, P.MID, "left", 700);
+        if (drive > 0) text("DRIVE " + Math.round(drive * 100), R, y0 + 12 * kk, 10, P.MID, "right", 700);
+      } else if (wd.type === "wave") {
+        const cy = y0 + H / 2;
+        ctx.fillStyle = P.LINE; ctx.fillRect(L, cy - 0.5, W, 1);
+        waveShape(L, y0 + 10 * kk, W, H - 20 * kk, wd.wave, wd.shape ?? 0.5, wd.cycles || 2, colOf(P, wd.col, KC[0]), 3);
+        text(String(wd.wave || "SIN").toUpperCase(), L, y0 + 12 * kk, 10, P.MID, "left", 700);
+      }
+      ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+    }
   } else if (kind === "text") {
     let y = title();
     let yy = y + 14;
@@ -1198,6 +1348,8 @@ const PANEL_TEMPLATES = {
   roundel:  { kind: "roundel", rings: ["blue", "white", "red"], title: "choralroot" },
   stripes:  { kind: "stripes", bands: ["red", "white", "blue"], band: 16, gap: 8, phase: 0, title: "choralroot" },
   params:   { kind: "params", title: "Envelope", page: "ENV 1/1", cols: [{ label: "Attack", value: "0.20", glyph: "env", env: [0.2, 0.3, 0.6, 0.3] }, { label: "Decay", value: "0.30", glyph: "knob", pct: 0.3 }, { label: "Sustain", value: "60", glyph: "bar", pct: 0.6 }, { label: "Release", value: "0.30", glyph: "knob", pct: 0.3 }] },
+  edit8:    { kind: "edit8", title: "WARM PAD*", right: "AMP ENV · 1/2", wide: { type: "env", a: 0.2, h: 0.0, d: 0.3, s: 0.7, r: 0.4, seg: 2 }, rows: [[{ label: "Attack", value: "0.20", glyph: "knob", pct: 0.2 }, { label: "Hold", value: "0.00", glyph: "knob", pct: 0 }, { label: "Decay", value: "0.30", glyph: "knob", pct: 0.3 }, { label: "Sustain", value: "70", glyph: "bar", pct: 0.7 }], [{ label: "Release", value: "0.40", glyph: "knob", pct: 0.4 }, { label: "Curve", value: "EXP" }, { label: "Vel", value: "50", glyph: "bar", pct: 0.5 }, null]], active: 0, hot: [0, 2] },
+  stack:    { kind: "stack", title: "WARM PAD", right: "OSC · 1/1", cols: ["Wave", "Level", "Coarse", "Fine"], rows: [{ label: "OSC 1", cells: [{ value: "SAW", wave: "SAW", glyph: "wave" }, { value: "90", pct: 0.9 }, { value: "0", pct: 0.5 }, { value: "+3", pct: 0.53 }] }, { label: "OSC 2", cells: [{ value: "SQR", wave: "SQR", glyph: "wave" }, { value: "70", pct: 0.7 }, { value: "+12", pct: 0.75 }, { value: "-5", pct: 0.45 }] }], active: 0, hot: null },
   arp:      { kind: "arp", root: "A", quality: "m", sup: "7", notes: [{ t: "A4", col: "cream" }, { t: "C5", col: "cream" }, { t: "E5", col: "cream" }, { t: "G5", col: "orange" }], pos: 2, line: "Arp 1/8" },
 };
 const scrEdit = document.getElementById("scrEdit"), scrJson = document.getElementById("scrJson"), scrErr = document.getElementById("scrErr");

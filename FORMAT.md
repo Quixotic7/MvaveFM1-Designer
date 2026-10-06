@@ -140,6 +140,103 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
 | `scope` | `root quality sup amp freq` | an oscilloscope wave (React view) |
 | `text` | `title lines` | free lines; a line is `{ t, px, col: theme\|accent\|dim, center, w }` or a string |
 | `loop` | `value label pct rec layers status title right` | the loop page: a ring with the bar count inside, layer rings, a status line |
+| `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
+| `stack` | `title titleCol right cols rows active hot` | N = 1–8 equal rows of four cells under column headings (oscillators, LFOs, the 8-slot mod matrix), a row label at the left; the `active` row in the knob colours, the others grey. See **Sound editor panels** |
+
+### Sound editor panels (`edit8`, `stack`)
+
+Both are drawn for the full 240 × 240 screen: give them `header: null`, `cards: null`, `footer: null`
+(if the state sets a header, cards or a footer they are drawn as usual and the layout below is squeezed
+vertically into the remaining panel).
+
+**Shared.** The top line (y 0–24): `title` left in 13 px bold (`titleCol`, default white; a trailing
+`*` means "edited"), `right` right-aligned in 11 px grey. A **cell** is `null` (empty) or
+`{ label, value, col, glyph, pct, bipolar, env, cycles, n, wave, shape }`:
+
+- `col` its knob colour; without it the colour is taken by column index: **blue, orange, white, green**
+  (KNOB 1–4; palettes without those names fall back to theme / accent / text / mint).
+- `glyph` one of the `params` glyphs `knob bar env wave saw square filter steps dots` (same fields:
+  `pct`, `env`, `cycles`, `n`), drawn small; omitted or `"none"` = a text cell.
+- `pct` 0–1: drives the glyph; a text cell (no glyph) draws it as a small horizontal bar.
+- `bipolar: true`: the bar is centre-zero, **`pct` 0.5 = zero** (0 = full negative, 1 = full positive);
+  with `glyph: "bar"` the vertical bar grows up / down from the middle.
+- `wave` (optional, `SAW SQR TRI SIN PWM NOIS`, with `shape` 0–1 = PWM duty / TRI peak and `cycles`,
+  default 1): draws that oscillator shape instead of a `glyph`.
+- **`active`** (row index) is the row that is on KNOB 1–4: its labels, glyphs and values are in the knob
+  colours and a 2 px bar in that colour sits under each cell. Every other row is drawn in the palette's
+  `dim` grey with no bar. **`hot`** `[row, col]` (or `null`) is the parameter just turned: a filled block
+  in the cell's colour behind its value (the value in the background colour).
+
+**`edit8`**: `rows` = 1 or 2 arrays of 4 cells; `active` 0 | 1; `wide` = one of
+
+- `{ "type": "env", "a", "h", "d", "s", "r", "seg", "col" }` (all 0–1): one wide AHDSR line (3 px, white)
+  over a faint baseline, the sustain a flat run; segment `seg` (0 A, 1 H, 2 D, 3 S, 4 R; `null` = none)
+  thicker in `col` (default: the colour of the `hot` cell, else the knob colour of column `seg % 4`),
+  segment letters A H D S R under the baseline.
+- `{ "type": "filter", "cut", "res", "ftype": "LP"|"BP"|"HP"|"NOTCH", "drive", "col" }` (`cut res drive`
+  0–1, cutoff on a 9-octave log axis): the response curve (3 px, orange = KNOB 2) with its resonance
+  peak over a dashed 0 dB pass level; `ftype` top left, `DRIVE n` top right when `drive` > 0.
+- `{ "type": "wave", "wave": "SAW"|"SQR"|"TRI"|"SIN"|"PWM"|"NOIS", "shape", "cycles", "col" }`: two
+  cycles (default) across the screen (3 px, blue = KNOB 1).
+- `null` / omitted: no band, the rows get the room and larger glyphs.
+
+Layout (cells 60 px wide at x = 60·c): with `wide` — title 0–24, wide band 24–120, row A 124–180,
+row B 184–240 (label 10 px, glyph 22 px, value 13 px bold); without — row A 30–130, row B 134–234
+(label 12 px, glyph 34 px, value 17 px bold).
+
+```json
+"screen": { "header": null, "cards": null, "footer": null, "panel": {
+  "kind": "edit8", "title": "WARM PAD*", "right": "AMP ENV · 1/2",
+  "wide": { "type": "env", "a": 0.2, "h": 0.0, "d": 0.3, "s": 0.7, "r": 0.4, "seg": 2 },
+  "rows": [
+    [ { "label": "Attack", "value": "0.20", "glyph": "knob", "pct": 0.2 },
+      { "label": "Hold", "value": "0.00", "glyph": "knob", "pct": 0.0 },
+      { "label": "Decay", "value": "0.30", "glyph": "knob", "pct": 0.3 },
+      { "label": "Sustain", "value": "70", "glyph": "bar", "pct": 0.7 } ],
+    [ { "label": "Release", "value": "0.40", "glyph": "knob", "pct": 0.4 },
+      { "label": "Env amt", "value": "+32", "glyph": "bar", "pct": 0.756, "bipolar": true },
+      { "label": "Vel", "value": "50", "pct": 0.5 },
+      null ] ],
+  "active": 0, "hot": [0, 2] } }
+```
+
+**`stack`**: `cols` = up to 4 column headings (10 px grey; `""` = none); `rows` = 1–8
+`{ "label": "OSC 1", "cells": [cell × 4] }`; `active` the row on the knobs. The rows share y 41–239
+equally under the headings (y ≈ 36); a row label column (11 px bold, white when active, else grey) is
+as wide as the longest `label` (max 44 px) and the four cells share the rest. A cell's own `label` is not
+drawn (the column heading names it). With rows ≥ 30 px (N ≤ 6): a glyph cell (`saw square wave dots
+steps knob env filter`, or `wave`) draws the glyph with its `value` under it; a text cell (no glyph, or
+`glyph: "bar"`) draws its `value` (15 px bold, 13 px under 45 px rows) with a 3 px `pct` bar under it.
+With rows < 30 px (N = 7–8, ~24.75 px: the mod matrix) every cell is text only: the `value` in 12 px
+bold and a 2 px `pct` bar (centre-zero with `bipolar`). The active-row knob bar is 2 px at the bottom of
+each cell; rows are separated by a 1 px line.
+
+```json
+"screen": { "header": null, "cards": null, "footer": null, "panel": {
+  "kind": "stack", "title": "WARM PAD*", "right": "OSC · 1/1", "titleCol": "white",
+  "cols": ["Wave", "Level", "Coarse", "Fine"],
+  "rows": [
+    { "label": "1", "cells": [ { "value": "SAW", "glyph": "saw" }, { "value": "90%", "glyph": "bar", "pct": 0.9 }, { "value": "0" }, { "value": "+3" } ] },
+    { "label": "2", "cells": [ { "value": "PWM", "glyph": "square", "pct": 0.55 }, { "value": "70%", "glyph": "bar", "pct": 0.7 }, { "value": "+12" }, { "value": "-5" } ] },
+    { "label": "3", "cells": [ { "value": "SIN", "glyph": "wave" }, { "value": "40%", "glyph": "bar", "pct": 0.4 }, { "value": "-12" }, { "value": "0" } ] },
+    { "label": "4", "cells": [ { "value": "NOIS", "glyph": "dots", "pct": 0.5 }, { "value": "0%", "glyph": "bar", "pct": 0 }, { "value": "0" }, { "value": "0" } ] } ],
+  "active": 1, "hot": [1, 2] } }
+```
+
+The mod matrix (8 rows, text only, a bipolar amount):
+
+```json
+"panel": { "kind": "stack", "title": "WARM PAD*", "right": "MOD 1", "cols": ["Source", "Dest", "Amount", ""],
+  "rows": [ { "label": "1", "cells": [ { "value": "LFO1" }, { "value": "CUT" }, { "value": "+24", "pct": 0.62, "bipolar": true }, null ] },
+            { "label": "2", "cells": [ { "value": "–" }, { "value": "–" }, { "value": "–" }, null ] },
+            "… 8 rows …" ],
+  "active": 0, "hot": null }
+```
+
+[examples/edit8-smoke.json](examples/edit8-smoke.json) has one of each (env, filter and wave bands, no
+band, a stack of 4, the 8-row mod matrix);
+[examples/choralroot-fm1-sound-editor-mockups.json](examples/choralroot-fm1-sound-editor-mockups.json)
+is the ChoralRoot sound editor built from them.
 
 `surface: false` on a panel drops its SURF card background (`chord`, `big`, `scope`, `notes` and
 `geek` draw on the background by default).

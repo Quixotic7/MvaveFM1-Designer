@@ -33,8 +33,9 @@ The tool models the FM-1 as its open firmwares see it (Felucca's `fm1_input.h` /
 - **screen mock-ups** composed from a structured description — an optional header, four knob cards and
   footer in Felucca's layout, and a panel — with templates for a chord name filling the screen in the
   Orchid notation, Orchid-style dial screens (a huge value with an inverted level fill), tall inverted
-  lists, a keyboard strip, a Geek Out view, layer tiles, a circular loop ring, an oscilloscope and
-  free text, in Felucca's eight palettes; edit the JSON in place with a live preview
+  lists, a keyboard strip, a Geek Out view, layer tiles, a circular loop ring, an oscilloscope,
+  dense sound-editor pages (`edit8`: 8 parameters under a wide envelope / filter / wave graphic;
+  `stack`: up to 8 rows of four, e.g. oscillators or the mod matrix) and free text, in Felucca's eight palettes; edit the JSON in place with a live preview
 - **multiple states** (up to 24): pages, layers, moments; each renamable with its own notes and a
   per-state png checkbox
 - **png export** of the faceplates at true proportions with legends, or of just the screens as a sheet

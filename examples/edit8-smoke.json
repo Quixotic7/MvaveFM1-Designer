@@ -1,0 +1,1105 @@
+{
+ "format": "fm1-panel-design",
+ "version": 1,
+ "device": "M-VAVE FM-1",
+ "name": "edit8 smoke",
+ "palette": "MOD",
+ "labels": {
+  "buttons": {},
+  "encoders": {}
+ },
+ "notes": "smoke test for the edit8 and stack panel kinds",
+ "states": [
+  {
+   "state": 1,
+   "name": "edit8 · amp env, decay hot",
+   "export": true,
+   "notes": "edit8 with the wide AHDSR band; row A on the knobs, Decay just turned",
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "buttons": {
+    "FX": 1,
+    "SEL": 1,
+    "ENV": 2,
+    "LFO": 1,
+    "EDIT": 1,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "encoders": {
+    "MASTER": {
+     "note": "",
+     "value": ""
+    },
+    "SELECT": {
+     "note": "",
+     "value": ""
+    },
+    "PRESETS": {
+     "note": "",
+     "value": ""
+    },
+    "ALGORITHM": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB1": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB2": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB3": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB4": {
+     "note": "",
+     "value": ""
+    }
+   },
+   "screen": {
+    "palette": null,
+    "header": null,
+    "cards": null,
+    "footer": null,
+    "panel": {
+     "kind": "edit8",
+     "title": "WARM PAD*",
+     "right": "AMP ENV · 1/2",
+     "wide": {
+      "type": "env",
+      "a": 0.2,
+      "h": 0.0,
+      "d": 0.3,
+      "s": 0.7,
+      "r": 0.4,
+      "seg": 2
+     },
+     "rows": [
+      [
+       {
+        "label": "Attack",
+        "value": "0.20",
+        "glyph": "knob",
+        "pct": 0.2
+       },
+       {
+        "label": "Hold",
+        "value": "0.00",
+        "glyph": "knob",
+        "pct": 0.0
+       },
+       {
+        "label": "Decay",
+        "value": "0.30",
+        "glyph": "knob",
+        "pct": 0.3
+       },
+       {
+        "label": "Sustain",
+        "value": "70",
+        "glyph": "bar",
+        "pct": 0.7
+       }
+      ],
+      [
+       {
+        "label": "Release",
+        "value": "0.40",
+        "glyph": "knob",
+        "pct": 0.4
+       },
+       {
+        "label": "Curve",
+        "value": "EXP",
+        "glyph": "none"
+       },
+       {
+        "label": "Vel",
+        "value": "50",
+        "glyph": "bar",
+        "pct": 0.5
+       },
+       null
+      ]
+     ],
+     "active": 0,
+     "hot": [
+      0,
+      2
+     ]
+    },
+    "note": "edit8 with the wide AHDSR band; row A on the knobs, Decay just turned"
+   }
+  },
+  {
+   "state": 2,
+   "name": "edit8 · filter, no wide band",
+   "export": true,
+   "notes": "no wide band: two tall rows, row B on the knobs",
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "buttons": {
+    "FX": 1,
+    "SEL": 1,
+    "ENV": 2,
+    "LFO": 1,
+    "EDIT": 1,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "encoders": {
+    "MASTER": {
+     "note": "",
+     "value": ""
+    },
+    "SELECT": {
+     "note": "",
+     "value": ""
+    },
+    "PRESETS": {
+     "note": "",
+     "value": ""
+    },
+    "ALGORITHM": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB1": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB2": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB3": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB4": {
+     "note": "",
+     "value": ""
+    }
+   },
+   "screen": {
+    "palette": null,
+    "header": null,
+    "cards": null,
+    "footer": null,
+    "panel": {
+     "kind": "edit8",
+     "title": "WARM PAD*",
+     "right": "FILTER · 1/2",
+     "wide": null,
+     "rows": [
+      [
+       {
+        "label": "Type",
+        "value": "LP",
+        "glyph": "filter",
+        "pct": 0.6
+       },
+       {
+        "label": "Cutoff",
+        "value": "2.4k",
+        "glyph": "knob",
+        "pct": 0.6
+       },
+       {
+        "label": "Reso",
+        "value": "30",
+        "glyph": "knob",
+        "pct": 0.3
+       },
+       {
+        "label": "Drive",
+        "value": "0",
+        "glyph": "bar",
+        "pct": 0.0
+       }
+      ],
+      [
+       {
+        "label": "Env Amt",
+        "value": "+40",
+        "glyph": "bar",
+        "pct": 0.7,
+        "bipolar": true
+       },
+       {
+        "label": "Key Trk",
+        "value": "50",
+        "glyph": "bar",
+        "pct": 0.5
+       },
+       {
+        "label": "Vel",
+        "value": "20",
+        "glyph": "knob",
+        "pct": 0.2
+       },
+       {
+        "label": "LFO",
+        "value": "0",
+        "glyph": "dots",
+        "pct": 0.0
+       }
+      ]
+     ],
+     "active": 1,
+     "hot": null
+    },
+    "note": "no wide band: two tall rows, row B on the knobs"
+   }
+  },
+  {
+   "state": 3,
+   "name": "edit8 · filter wide band",
+   "export": true,
+   "notes": "the filter response wide, cutoff hot",
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "buttons": {
+    "FX": 1,
+    "SEL": 1,
+    "ENV": 2,
+    "LFO": 1,
+    "EDIT": 1,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "encoders": {
+    "MASTER": {
+     "note": "",
+     "value": ""
+    },
+    "SELECT": {
+     "note": "",
+     "value": ""
+    },
+    "PRESETS": {
+     "note": "",
+     "value": ""
+    },
+    "ALGORITHM": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB1": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB2": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB3": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB4": {
+     "note": "",
+     "value": ""
+    }
+   },
+   "screen": {
+    "palette": null,
+    "header": null,
+    "cards": null,
+    "footer": null,
+    "panel": {
+     "kind": "edit8",
+     "title": "BASS 3",
+     "right": "FILTER · 1/2",
+     "wide": {
+      "type": "filter",
+      "cut": 0.55,
+      "res": 0.45,
+      "ftype": "LP",
+      "drive": 0.2
+     },
+     "rows": [
+      [
+       {
+        "label": "Type",
+        "value": "LP"
+       },
+       {
+        "label": "Cutoff",
+        "value": "1.8k",
+        "glyph": "knob",
+        "pct": 0.55
+       },
+       {
+        "label": "Reso",
+        "value": "45",
+        "glyph": "knob",
+        "pct": 0.45
+       },
+       {
+        "label": "Drive",
+        "value": "20",
+        "glyph": "bar",
+        "pct": 0.2
+       }
+      ],
+      [
+       {
+        "label": "Env Amt",
+        "value": "+60",
+        "glyph": "knob",
+        "pct": 0.8
+       },
+       {
+        "label": "Key Trk",
+        "value": "50",
+        "glyph": "bar",
+        "pct": 0.5
+       },
+       {
+        "label": "Vel",
+        "value": "20",
+        "glyph": "knob",
+        "pct": 0.2
+       },
+       null
+      ]
+     ],
+     "active": 0,
+     "hot": [
+      0,
+      1
+     ]
+    },
+    "note": "the filter response wide, cutoff hot"
+   }
+  },
+  {
+   "state": 4,
+   "name": "edit8 · osc wave band",
+   "export": true,
+   "notes": "two cycles of the oscillator wide",
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "buttons": {
+    "FX": 1,
+    "SEL": 1,
+    "ENV": 2,
+    "LFO": 1,
+    "EDIT": 1,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "encoders": {
+    "MASTER": {
+     "note": "",
+     "value": ""
+    },
+    "SELECT": {
+     "note": "",
+     "value": ""
+    },
+    "PRESETS": {
+     "note": "",
+     "value": ""
+    },
+    "ALGORITHM": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB1": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB2": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB3": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB4": {
+     "note": "",
+     "value": ""
+    }
+   },
+   "screen": {
+    "palette": null,
+    "header": null,
+    "cards": null,
+    "footer": null,
+    "panel": {
+     "kind": "edit8",
+     "title": "LEAD*",
+     "right": "OSC 1 · 1/2",
+     "wide": {
+      "type": "wave",
+      "wave": "PWM",
+      "shape": 0.3
+     },
+     "rows": [
+      [
+       {
+        "label": "Wave",
+        "value": "PWM",
+        "wave": "PWM",
+        "shape": 0.3
+       },
+       {
+        "label": "PW",
+        "value": "30",
+        "glyph": "knob",
+        "pct": 0.3
+       },
+       {
+        "label": "Coarse",
+        "value": "0",
+        "glyph": "knob",
+        "pct": 0.5
+       },
+       {
+        "label": "Fine",
+        "value": "+3",
+        "glyph": "knob",
+        "pct": 0.53
+       }
+      ],
+      [
+       {
+        "label": "Level",
+        "value": "90",
+        "glyph": "bar",
+        "pct": 0.9
+       },
+       {
+        "label": "Sync",
+        "value": "OFF"
+       },
+       {
+        "label": "Ring",
+        "value": "0",
+        "glyph": "knob",
+        "pct": 0.0
+       },
+       {
+        "label": "Phase",
+        "value": "FREE"
+       }
+      ]
+     ],
+     "active": 0,
+     "hot": null
+    },
+    "note": "two cycles of the oscillator wide"
+   }
+  },
+  {
+   "state": 5,
+   "name": "stack of 4 · oscillators",
+   "export": true,
+   "notes": "four oscillators, OSC 2 on the knobs, coarse hot",
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "buttons": {
+    "FX": 1,
+    "SEL": 2,
+    "ENV": 1,
+    "LFO": 1,
+    "EDIT": 1,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "encoders": {
+    "MASTER": {
+     "note": "",
+     "value": ""
+    },
+    "SELECT": {
+     "note": "",
+     "value": ""
+    },
+    "PRESETS": {
+     "note": "",
+     "value": ""
+    },
+    "ALGORITHM": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB1": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB2": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB3": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB4": {
+     "note": "",
+     "value": ""
+    }
+   },
+   "screen": {
+    "palette": null,
+    "header": null,
+    "cards": null,
+    "footer": null,
+    "panel": {
+     "kind": "stack",
+     "title": "WARM PAD*",
+     "right": "OSC · 1/1",
+     "cols": [
+      "Wave",
+      "Level",
+      "Coarse",
+      "Fine"
+     ],
+     "rows": [
+      {
+       "label": "OSC 1",
+       "cells": [
+        {
+         "value": "SAW",
+         "glyph": "wave",
+         "wave": "SAW"
+        },
+        {
+         "value": "90",
+         "pct": 0.9
+        },
+        {
+         "value": "0",
+         "pct": 0.5
+        },
+        {
+         "value": "+3",
+         "pct": 0.53
+        }
+       ]
+      },
+      {
+       "label": "OSC 2",
+       "cells": [
+        {
+         "value": "SQR",
+         "glyph": "wave",
+         "wave": "SQR"
+        },
+        {
+         "value": "70",
+         "pct": 0.7
+        },
+        {
+         "value": "+12",
+         "pct": 0.75
+        },
+        {
+         "value": "-5",
+         "pct": 0.45
+        }
+       ]
+      },
+      {
+       "label": "OSC 3",
+       "cells": [
+        {
+         "value": "TRI",
+         "glyph": "wave",
+         "wave": "TRI"
+        },
+        {
+         "value": "40",
+         "pct": 0.4
+        },
+        {
+         "value": "-12",
+         "pct": 0.25
+        },
+        {
+         "value": "0",
+         "pct": 0.5
+        }
+       ]
+      },
+      {
+       "label": "OSC 4",
+       "cells": [
+        {
+         "value": "NOIS",
+         "glyph": "wave",
+         "wave": "NOIS"
+        },
+        {
+         "value": "10",
+         "pct": 0.1
+        },
+        {
+         "value": "0",
+         "pct": 0.5
+        },
+        {
+         "value": "0",
+         "pct": 0.5
+        }
+       ]
+      }
+     ],
+     "active": 1,
+     "hot": [
+      1,
+      2
+     ],
+     "titleCol": "orange"
+    },
+    "note": "four oscillators, OSC 2 on the knobs, coarse hot"
+   }
+  },
+  {
+   "state": 6,
+   "name": "stack of 8 · mod matrix",
+   "export": true,
+   "notes": "the mod matrix: 8 slots, slot 5 on the knobs, amount hot",
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "buttons": {
+    "FX": 1,
+    "SEL": 2,
+    "ENV": 1,
+    "LFO": 1,
+    "EDIT": 1,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "encoders": {
+    "MASTER": {
+     "note": "",
+     "value": ""
+    },
+    "SELECT": {
+     "note": "",
+     "value": ""
+    },
+    "PRESETS": {
+     "note": "",
+     "value": ""
+    },
+    "ALGORITHM": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB1": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB2": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB3": {
+     "note": "",
+     "value": ""
+    },
+    "KNOB4": {
+     "note": "",
+     "value": ""
+    }
+   },
+   "screen": {
+    "palette": null,
+    "header": null,
+    "cards": null,
+    "footer": null,
+    "panel": {
+     "kind": "stack",
+     "title": "WARM PAD*",
+     "right": "MOD MATRIX",
+     "cols": [
+      "Source",
+      "Dest",
+      "Amount",
+      "Via"
+     ],
+     "rows": [
+      {
+       "label": "1",
+       "cells": [
+        {
+         "value": "LFO 1"
+        },
+        {
+         "value": "CUTOFF"
+        },
+        {
+         "value": "+60",
+         "pct": 0.8,
+         "bipolar": true
+        },
+        {
+         "value": "MW"
+        }
+       ]
+      },
+      {
+       "label": "2",
+       "cells": [
+        {
+         "value": "LFO 2"
+        },
+        {
+         "value": "PITCH"
+        },
+        {
+         "value": "-25",
+         "pct": 0.375,
+         "bipolar": true
+        },
+        {
+         "value": "—"
+        }
+       ]
+      },
+      {
+       "label": "3",
+       "cells": [
+        {
+         "value": "ENV 2"
+        },
+        {
+         "value": "PW"
+        },
+        {
+         "value": "+40",
+         "pct": 0.7,
+         "bipolar": true
+        },
+        {
+         "value": "—"
+        }
+       ]
+      },
+      {
+       "label": "4",
+       "cells": [
+        {
+         "value": "VEL"
+        },
+        {
+         "value": "LEVEL"
+        },
+        {
+         "value": "+30",
+         "pct": 0.65,
+         "bipolar": true
+        },
+        {
+         "value": "MW"
+        }
+       ]
+      },
+      {
+       "label": "5",
+       "cells": [
+        {
+         "value": "MOD"
+        },
+        {
+         "value": "RESO"
+        },
+        {
+         "value": "-80",
+         "pct": 0.1,
+         "bipolar": true
+        },
+        {
+         "value": "—"
+        }
+       ]
+      },
+      {
+       "label": "6",
+       "cells": [
+        {
+         "value": "AT"
+        },
+        {
+         "value": "PAN"
+        },
+        {
+         "value": "+10",
+         "pct": 0.55,
+         "bipolar": true
+        },
+        {
+         "value": "—"
+        }
+       ]
+      },
+      {
+       "label": "7",
+       "cells": [
+        {
+         "value": "KEY"
+        },
+        {
+         "value": "LFO1 RT"
+        },
+        {
+         "value": "+50",
+         "pct": 0.75,
+         "bipolar": true
+        },
+        {
+         "value": "MW"
+        }
+       ]
+      },
+      {
+       "label": "8",
+       "cells": [
+        {
+         "value": "RAND"
+        },
+        {
+         "value": "FX MIX"
+        },
+        {
+         "value": "0",
+         "pct": 0.5,
+         "bipolar": true
+        },
+        {
+         "value": "—"
+        }
+       ]
+      }
+     ],
+     "active": 4,
+     "hot": [
+      4,
+      2
+     ]
+    },
+    "note": "the mod matrix: 8 slots, slot 5 on the knobs, amount hot"
+   }
+  }
+ ]
+}
