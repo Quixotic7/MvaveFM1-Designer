@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChoralRoot FM-1 Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #16161a; --panel: #1f1f24; --panel2: #26262c; --line: #34343c;
+    --text: #d8d8dc; --dim: #8a8a92;
+    --accent: #54d678;   /* choralroot green (annotation badges) */
+    --ann: #54d678;
+    --plate: #1c1c20;    /* FM-1 body: dark grey */
+    --cap: #2b2b31;      /* unlit silicone key / button cap */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, "Helvetica Neue", Arial, sans-serif; padding: 14px 18px 40px; }
+  h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: 0.04em; }
+  h1 span { color: var(--dim); font-weight: 400; }
+  .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .topbar .grow { flex: 1; }
+  input[type="text"], textarea, input[type="number"] { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
+  input:focus, textarea:focus { outline: 1px solid var(--accent); }
+  #designName { width: 220px; }
+  select { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: inherit; cursor: pointer; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--accent); color: #fff; }
+  button.small { padding: 2px 8px; font-size: 12px; }
+  button.primary { background: #1d3326; border-color: var(--accent); }
+  .palette-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .palette { display: flex; gap: 6px; }
+  .swatch { width: 54px; height: 26px; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 11px; user-select: none; color: #ccc; }
+  .swatch.sel { outline: 2px solid #fff; outline-offset: 1px; }
+  .sw0 { background: var(--cap); color: #777; }
+  .sw1 { background: #5a5a62; }
+  .sw2 { background: #f4f4ff; color: #111; }
+  .sw3 { background: repeating-linear-gradient(90deg, #f4f4ff 0 8px, #5a5a62 8px 16px); color: #111; }
+  .hint { color: var(--dim); font-size: 12px; max-width: 760px; }
+  .hint b { color: var(--text); font-weight: 600; }
+  .tools { display: flex; gap: 4px; }
+  .tools button.sel { border-color: var(--accent); color: var(--accent); background: #1d3326; }
+  label.chk { display: flex; align-items: center; gap: 4px; color: var(--dim); font-size: 12px; cursor: pointer; user-select: none; }
+  .states { display: flex; flex-direction: column; gap: 16px; }
+  .statebox { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 12px; }
+  .statehead { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+  .statehead input.sname { width: 220px; min-width: 100px; font-weight: 600; padding: 3px 6px; background: transparent; border-color: transparent; }
+  .statehead input.sname:hover, .statehead input.sname:focus { background: var(--panel2); border-color: var(--line); }
+  .statehead label.exp { display: flex; align-items: center; gap: 3px; color: var(--dim); font-size: 11px; cursor: pointer; user-select: none; }
+  svg.board { display: block; width: 100%; max-width: 1100px; touch-action: none; cursor: crosshair; background: transparent; }
+  .board .hit { cursor: pointer; }
+  .statenotes { width: 100%; resize: vertical; min-height: 34px; font-size: 12px; margin-top: 8px; }
+  .annlist { margin-top: 6px; font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+  @media (max-width: 720px) { .annlist { grid-template-columns: 1fr; } }
+  .annitem { display: flex; gap: 6px; align-items: center; padding: 2px 0; color: var(--dim); }
+  .annitem b { color: var(--ann); font-weight: 600; min-width: 90px; cursor: pointer; }
+  .annitem span { flex: 1; color: var(--text); cursor: pointer; }
+  .annitem button { padding: 0 6px; font-size: 11px; line-height: 18px; }
+  .annitem .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; border-radius: 8px; background: var(--ann); color: #10201a; font-size: 10px; font-weight: 700; padding: 0 3px; }
+  .globalnotes { margin-top: 16px; }
+  .globalnotes textarea { width: 100%; min-height: 54px; resize: vertical; }
+  label.lbl { display: block; color: var(--dim); font-size: 12px; margin-bottom: 3px; }
+  #tip { position: fixed; pointer-events: none; z-index: 50; display: none; background: #000; color: #fff; border: 1px solid var(--line); padding: 4px 8px; border-radius: 5px; font-size: 12px; white-space: nowrap; }
+  .editpop { position: fixed; z-index: 60; display: none; background: var(--panel2); border: 1px solid var(--accent); border-radius: 8px; padding: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.5); width: 320px; }
+  .editpop.wide { width: min(560px, 94vw); }
+  .editpop .who { font-size: 11px; color: var(--dim); margin-bottom: 6px; }
+  .editpop input[type="text"], .editpop textarea, .editpop select { width: 100%; margin-bottom: 6px; }
+  .editpop textarea { min-height: 40px; resize: vertical; }
+  .editpop textarea.json { min-height: 260px; font: 12px/1.4 ui-monospace, Menlo, monospace; }
+  .editpop .field { font-size: 11px; color: var(--dim); margin: 4px 0 2px; }
+  .editpop .row { display: flex; gap: 6px; margin-top: 4px; align-items: center; }
+  .editpop .row .grow { flex: 1; }
+  .editpop .err { color: #ff7b72; font-size: 12px; }
+  #loadModal { position: fixed; inset: 0; z-index: 70; display: none; background: rgba(0,0,0,.6); align-items: center; justify-content: center; }
+  #loadModal .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; width: min(640px, 92vw); }
+  #loadModal textarea { width: 100%; min-height: 220px; font: 12px/1.4 ui-monospace, Menlo, monospace; }
+  #loadModal .row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  #loadModal .err { color: #ff7b72; font-size: 12px; flex: 1; }
+  #status { position: fixed; left: 18px; bottom: 8px; color: var(--dim); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>ChoralRoot FM-1 designer <span id="subTitle">· 27 keys · 14 buttons · 8 knobs · 240×240 screen</span></h1>
+  <div class="grow"></div>
+  <input type="text" id="designName" placeholder="design name" value="untitled">
+  <label class="chk" title="the screen palette (Felucca's eight) used by every state that does not set its own">palette
+    <select id="palSel"></select></label>
+  <button id="btnAddState" title="add another state to the design (a page, a layer held, a chord sounding…)">add state</button>
+  <button id="btnNew">new</button>
+  <button id="btnLoad">load</button>
+  <button id="btnSave" class="primary">save .json</button>
+  <button id="btnCopy">copy json</button>
+  <button id="btnPng" title="export the states whose png checkbox is ticked, as faceplates with legends">export panels png</button>
+  <button id="btnScreens" title="export only the 240×240 screens of the ticked states, as a sheet">export screens png</button>
+</div>
+
+<div class="palette-row">
+  <div class="tools">
+    <button id="toolPaint" class="small sel" title="paint tool (P): click/drag keys and buttons to set their LED level; right-drag turns them off">paint</button>
+    <button id="toolLabel" class="small" title="label tool (L): click a key, button or knob to edit what it does in this state">label</button>
+  </div>
+  <div class="palette" id="palette"></div>
+  <div class="hint">
+    <b>drag</b> paint LED level · <b>right-drag</b> off · <b>double-click</b> a key / button / knob to label and annotate it ·
+    <b>click the screen</b> to design it · <b>alt-click</b> pick level · <b>⌘Z</b> undo
+  </div>
+  <label class="chk">key text <select id="keyText"><option value="label">function</option><option value="note">note name</option><option value="num">key #</option><option value="stock">stock print</option></select></label>
+  <label class="chk"><input type="checkbox" id="chkStock" checked> stock button ids</label>
+</div>
+
+<div class="states" id="states"></div>
+
+<div class="globalnotes">
+  <label class="lbl" for="globalNotes">design notes (overall description, intent, how the states relate, animation behaviour…)</label>
+  <textarea id="globalNotes" placeholder="e.g. state 1 is idle, state 2 has MAJ held with C4 pressed, state 3 is the KEY layer…"></textarea>
+</div>
+
+<div id="tip"></div>
+
+<!-- key / button editor -->
+<div id="annEdit" class="editpop">
+  <div class="who" id="annWho"></div>
+  <div class="field">label printed on the cap in this state (what it does)</div>
+  <input type="text" id="annLabel" placeholder="e.g. DIM · C · UNDO">
+  <div class="field">note for the legend (optional)</div>
+  <input type="text" id="annText" placeholder="e.g. held: chord type, momentary">
+  <div class="row">
+    <button id="annSave" class="small primary">save</button>
+    <button id="annDel" class="small">remove</button>
+    <button id="annCancel" class="small">cancel</button>
+  </div>
+</div>
+
+<!-- encoder editor -->
+<div id="ctrlEdit" class="editpop">
+  <div class="who" id="ctrlWho"></div>
+  <div class="field">function (what turning it does)</div>
+  <input type="text" id="cf_note" placeholder="e.g. chord voicing">
+  <div class="field">value shown under the knob (optional)</div>
+  <input type="text" id="cf_value" placeholder="e.g. +2">
+  <div class="row">
+    <button id="ctrlSave" class="small primary">save</button>
+    <button id="ctrlClear" class="small">clear</button>
+    <button id="ctrlCancel" class="small">cancel</button>
+  </div>
+</div>
+
+<!-- screen editor -->
+<div id="scrEdit" class="editpop wide">
+  <div class="who" id="scrWho"></div>
+  <div class="row">
+    <label class="chk">palette <select id="scrPal"></select></label>
+    <label class="chk">panel template <select id="scrKind"></select></label>
+    <button id="scrTpl" class="small" title="replace the panel with the chosen template">insert</button>
+    <div class="grow"></div>
+    <label class="chk">note <input type="text" id="scrNote" style="width:180px" placeholder="legend text"></label>
+  </div>
+  <div class="field">screen JSON (header · cards · panel · footer — see FORMAT.md)</div>
+  <textarea id="scrJson" class="json"></textarea>
+  <div class="row">
+    <button id="scrSave" class="small primary">apply</button>
+    <button id="scrCancel" class="small">cancel</button>
+    <div class="err" id="scrErr"></div>
+  </div>
+</div>
+
+<div id="loadModal">
+  <div class="box">
+    <label class="lbl">paste design JSON here, or choose a file</label>
+    <textarea id="loadText" placeholder='{"format":"fm1-panel-design", ...}'></textarea>
+    <div class="row">
+      <input type="file" id="loadFile" accept=".json,application/json">
+      <div class="err" id="loadErr"></div>
+      <button id="loadDo" class="primary">load</button>
+      <button id="loadCancel">cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="status"></div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   M-VAVE FM-1 hardware model
+   ---------------------------------------------------------------------
+   27 silicone keys F3..G5 (key index 0..26, MIDI 53 + k), each with one
+   white LED; 12 function buttons in a 2x6 block + OCT- / OCT+, each with
+   an LED (REC red, PLAY orange with a second green LED); 7 endless
+   encoders + the MASTER pot (no push switches); a 1.54" 240x240 TFT.
+   Geometry is in the pixel units of MWaveFM1Reference/layout.png
+   (904 x 566), measured from the drawing; 0.1878 mm per unit.
+   ===================================================================== */
+
+const KEY_N = 27, MAX_STATES = 24;
+const DEV_W = 904, DEV_H = 566, MM_PER_PX = 161.5 / 860;
+const BODY = { x: 22, y: 22, w: 860, h: 522, r: 38 };
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+function noteName(m) { return NOTE_NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+function keyBlack(k) { return (0x54A >> ((k + 5) % 12)) & 1; }     // firmware seq.c key_black
+
+const WHITE_X = [71,119,167,215,264,312,360,408,456,504,553,601,649,697,745,794];
+const BLACK_X = [95,143,191,288,336,432,480,529,625,673,769];
+const STOCK_BLACK = ["OP1","OP2","OP3","OP4","OP5","OP6","PIT","GLO","MONO","POLY",""];
+const KEY_W = 42, KEY_H = 76;
+const KEYS = [];
+{ let w = 0, b = 0;
+  for (let k = 0; k < KEY_N; k++) {
+    const black = keyBlack(k);
+    const x = black ? BLACK_X[b] : WHITE_X[w], y = black ? 326 : 408;
+    KEYS.push({ i: k, role: black ? "black" : "white", place: black ? b : w, midi: 53 + k, name: noteName(53 + k),
+      stock: black ? STOCK_BLACK[b] : "", x, y, w: KEY_W, h: KEY_H, cx: x + KEY_W / 2, cy: y + KEY_H / 2 });
+    if (black) b++; else w++;
+  }
+}
+
+const BTN_IDS = ["FX","SEL","ENV","LFO","EDIT","GLO","HOME","SAVE","ARP","SEQ","PLAY","REC","OCT-","OCT+"];
+const BTN_X = [500,554,608,661,715,768], BTN_Y = [177,231], BTN_S = 36;
+const BUTTONS = {};
+BTN_IDS.slice(0, 12).forEach((id, i) => {
+  const x = BTN_X[i % 6], y = BTN_Y[Math.floor(i / 6)];
+  BUTTONS[id] = { id, x, y, w: BTN_S, h: BTN_S, cx: x + BTN_S / 2, cy: y + BTN_S / 2, led: id === "REC" ? "red" : id === "PLAY" ? "orange" : "white" };
+});
+BUTTONS["OCT-"] = { id: "OCT-", x: 87, y: 250, w: 42, h: 22, cx: 108, cy: 261, led: "white" };
+BUTTONS["OCT+"] = { id: "OCT+", x: 153, y: 250, w: 42, h: 22, cx: 174, cy: 261, led: "white" };
+const BTN_FRAME = { x: 484, y: 162, w: 338, h: 124, r: 8 };
+const OCT_FRAME = { x: 77, y: 243, w: 127, h: 36, r: 6 };
+
+const ENC_IDS = ["MASTER","SELECT","PRESETS","ALGORITHM","KNOB1","KNOB2","KNOB3","KNOB4"];
+const ENCODERS = {
+  MASTER:    { id: "MASTER",    cx: 95,    cy: 101, pot: true,  labelY: 66 },
+  SELECT:    { id: "SELECT",    cx: 186.5, cy: 101, pot: false, labelY: 66 },
+  PRESETS:   { id: "PRESETS",   cx: 95,    cy: 191, pot: false, labelY: 156 },
+  ALGORITHM: { id: "ALGORITHM", cx: 186.5, cy: 191, pot: false, labelY: 156 },
+  KNOB1:     { id: "KNOB1",     cx: 508,   cy: 101, pot: false, labelY: 66 },
+  KNOB2:     { id: "KNOB2",     cx: 604,   cy: 101, pot: false, labelY: 66 },
+  KNOB3:     { id: "KNOB3",     cx: 701,   cy: 101, pot: false, labelY: 66 },
+  KNOB4:     { id: "KNOB4",     cx: 797,   cy: 101, pot: false, labelY: 66 },
+};
+const ENC_R = 21, ENC_CAP = 12;
+const SCREEN = { x: 247, y: 59, w: 201, h: 201, ax: 272, ay: 84, aw: 150, ah: 150 };   // module, active 240x240 area
+
+/* LED levels */
+const LEVELS = ["off","dim","lit","blink"];
+const LED_RGB = { white: "244,244,255", red: "255,66,66", orange: "255,165,42", green: "61,220,90" };
+function ledFill(level, colour) {
+  const rgb = LED_RGB[colour || "white"];
+  if (level === 1) return `rgba(${rgb},0.38)`;
+  if (level >= 2) return `rgb(${rgb})`;
+  return null;
+}
+
+/* ---------- Felucca screen palettes (tools/gen_ui_palettes.py) ---------- */
+const PALETTES = {
+  MONO:   { bg: [14,14,14],    surf: [36,36,36],    text: [204,204,204], theme: [232,232,232], accent: [255,255,255] },
+  GREEN:  { bg: [6,18,10],     surf: [16,40,26],    text: [226,244,230], theme: [84,214,120],  accent: [255,214,92] },
+  AMBER:  { bg: [18,14,8],     surf: [42,32,18],    text: [246,236,216], theme: [255,168,40],  accent: [96,214,230] },
+  ICE:    { bg: [8,16,24],     surf: [20,36,52],    text: [228,240,248], theme: [80,184,236],  accent: [255,140,100] },
+  VIOLET: { bg: [16,12,28],    surf: [36,28,60],    text: [240,232,252], theme: [178,136,246], accent: [110,228,168] },
+  ROSE:   { bg: [24,10,18],    surf: [52,22,40],    text: [252,232,242], theme: [244,114,182], accent: [255,214,110] },
+  PAPER:  { bg: [244,239,228], surf: [226,218,202], text: [34,30,24],    theme: [10,84,70],    accent: [172,56,8] },
+  "HI-CON": { bg: [0,0,0],     surf: [40,40,40],    text: [255,255,255], theme: [255,232,0],   accent: [0,230,255] },
+  CHORAL: { bg: [20,18,27],    surf: [36,33,48],    text: [242,228,196], theme: [217,66,122],  accent: [242,140,40],
+    c: { cream: [242,228,196], orange: [242,140,40], coral: [232,80,58], magenta: [217,66,122], blue: [79,143,208],
+         teal: [79,179,199], navy: [31,52,92], grey: [120,116,132], mint: [120,214,150] } },
+  MOD: { bg: [10,10,12], surf: [28,28,32], text: [246,243,234], theme: [224,58,47], accent: [242,183,5],
+    c: { white: [246,243,234], red: [224,58,47], blue: [43,80,200], yellow: [242,183,5], orange: [240,122,26],
+         green: [47,179,122], black: [10,10,12], grey: [110,110,118], cream: [246,243,234], coral: [224,58,47],
+         magenta: [224,58,47], teal: [43,80,200], mint: [47,179,122], navy: [43,80,200] } },
+};
+const PAL_NAMES = Object.keys(PALETTES);
+function mix(a, b, pct) { return a.map((v, i) => Math.round(v + (b[i] - v) * pct / 100)); }
+function rgb(c) { return `rgb(${c[0]},${c[1]},${c[2]})`; }
+function palette(name) {
+  const p = PALETTES[name] || PALETTES.GREEN;
+  return { name, BG: rgb(p.bg), SURF: rgb(p.surf), TEXT: rgb(p.text), THEME: rgb(p.theme), ACCENT: rgb(p.accent),
+    MID: rgb(mix(p.bg, p.text, 70)), DIM: rgb(mix(p.bg, p.text, 42)), LINE: rgb(mix(p.bg, p.text, 18)),
+    SEL: rgb(mix(p.bg, p.theme, 80)), TINT: rgb(mix(p.bg, p.theme, 12)), RAISE: rgb(mix(p.surf, p.text, 12)),
+    KEY: rgb(mix(p.bg, p.text, 78)), INK: rgb(p.bg), REC: name === "PAPER" ? "rgb(190,24,40)" : name === "MONO" ? rgb(p.accent) : name === "CHORAL" ? rgb(p.c.coral) : "rgb(255,72,72)",
+    light: name === "PAPER",
+    C: p.c ? Object.fromEntries(Object.entries(p.c).map(([k, v]) => [k, rgb(v)]))
+           : { cream: rgb(p.text), orange: rgb(p.accent), coral: rgb(p.accent), magenta: rgb(p.theme), blue: rgb(p.theme),
+               teal: rgb(p.theme), navy: rgb(p.surf), grey: rgb(mix(p.bg, p.text, 70)), mint: rgb(p.theme) } };
+}
+/* a colour by name: a palette colour (cream, orange, coral, magenta, blue, teal, navy, grey, mint), a token (theme,
+   accent, text, mid, dim, rec) or a hex; else the fallback */
+function colOf(P, name, fallback) {
+  if (!name) return fallback;
+  if (P.C[name]) return P.C[name];
+  if (String(name)[0] === "#") return name;
+  return P[String(name).toUpperCase()] || fallback;
+}
+
+/* ---------- state ---------- */
+function blankEnc() { return { note: "", value: "" }; }
+function defaultScreen() {
+  return {
+    palette: null,
+    header: { icon: "stop", bpm: "120", mid: "", right: "", batt: 3, usb: false },
+    cards: [ { label: "VOICE", value: "0" }, { label: "BASS", value: "0" }, { label: "PERF", value: "OFF" }, { label: "FX", value: "OFF" } ],
+    panel: { kind: "chord", root: "", quality: "", sup: "", notes: "", hint: "play a chord" },
+    footer: { left: "", right: "" },
+    note: "",
+  };
+}
+function blankState(i) {
+  return {
+    name: "state " + (i + 1), notes: "", export: true,
+    keys: new Array(KEY_N).fill(0), keyLabels: {}, keyNotes: {},
+    buttons: Object.fromEntries(BTN_IDS.map(id => [id, 0])), playGreen: 0, buttonLabels: {}, buttonNotes: {},
+    encoders: Object.fromEntries(ENC_IDS.map(id => [id, blankEnc()])),
+    screen: defaultScreen(),
+  };
+}
+function blankDesign() {
+  return { name: "untitled", notes: "", palette: "MOD",
+    labels: { buttons: {}, encoders: {} },   // the firmware's relabelling of the printed controls (design-wide)
+    states: [blankState(0)] };
+}
+
+let state = blankDesign();
+let curLevel = 2;
+let undoStack = [];
+let lastState = 0;
+
+function pushUndo() { undoStack.push(JSON.stringify(state)); if (undoStack.length > 100) undoStack.shift(); }
+function undo() { if (!undoStack.length) return; state = JSON.parse(undoStack.pop()); fullRedraw(); setStatus("undo"); }
+function setStatus(msg) { const el = document.getElementById("status"); el.textContent = msg; clearTimeout(setStatus._t); setStatus._t = setTimeout(() => el.textContent = "", 4000); }
+
+/* ---------- serialization ---------- */
+function clampLevel(v) {
+  if (typeof v === "string") { const i = LEVELS.indexOf(v.toLowerCase()); if (i >= 0) return i; v = Number(v); }
+  v = Math.round(Number(v) || 0); return Math.max(0, Math.min(3, v));
+}
+function keyMapRef() {
+  return KEYS.map(k => ({ key: k.i, role: k.role, note: k.midi, name: k.name, stock: k.stock || undefined }));
+}
+function convention() {
+  return "M-VAVE FM-1: 27 keys F3..G5 addressed by key index 0-26 (MIDI note 53 + index; firmware fm1_in.notes bit n), each " +
+    "with one white LED. 14 buttons by id (FX SEL ENV LFO EDIT GLO / HOME SAVE ARP SEQ PLAY REC, OCT- OCT+), each with an LED " +
+    "(REC red, PLAY orange plus a separate green LED 'playGreen'). LED levels: 0 off, 1 dim (the glow), 2 lit, 3 blinking. " +
+    "8 rotary controls by id (MASTER pot, SELECT, PRESETS, ALGORITHM, KNOB1..KNOB4 encoders; no push switches) carry text notes. " +
+    "The 240x240 screen is a structured mock-up (header, four knob cards, a panel, a footer) in one of Felucca's eight palettes. " +
+    "Multiple states are alternative pages / layers / moments of the same hardware.";
+}
+function toJSON() {
+  return {
+    format: "fm1-panel-design", version: 1, device: "M-VAVE FM-1",
+    name: state.name, palette: state.palette, convention: convention(), keyMap: keyMapRef(),
+    labels: { buttons: { ...state.labels.buttons }, encoders: { ...state.labels.encoders } },
+    notes: state.notes,
+    states: state.states.map((s, i) => ({
+      state: i + 1, name: s.name, export: !!s.export, notes: s.notes,
+      keys: s.keys.map(clampLevel),
+      keyLabels: sortedObj(s.keyLabels), keyNotes: sortedObj(s.keyNotes),
+      buttons: Object.fromEntries(BTN_IDS.map(id => [id, clampLevel(s.buttons[id])])),
+      playGreen: s.playGreen ? 1 : 0,
+      buttonLabels: { ...s.buttonLabels }, buttonNotes: { ...s.buttonNotes },
+      encoders: Object.fromEntries(ENC_IDS.map(id => [id, { note: s.encoders[id].note || "", value: s.encoders[id].value || "" }])),
+      screen: JSON.parse(JSON.stringify(s.screen)),
+    })),
+  };
+}
+function sortedObj(o) { return Object.fromEntries(Object.keys(o).map(Number).sort((a, b) => a - b).map(k => [k, o[k]])); }
+function fromJSON(obj) {
+  if (!obj || typeof obj !== "object") throw new Error("not a JSON object");
+  const entries = Array.isArray(obj.states) ? obj.states : (Array.isArray(obj.keys) ? [obj] : null);
+  if (!entries) throw new Error('missing "states" array');
+  if (!entries.length) throw new Error('"states" is empty');
+  const d = blankDesign();
+  d.name = typeof obj.name === "string" ? obj.name : "untitled";
+  d.notes = typeof obj.notes === "string" ? obj.notes : "";
+  if (PALETTES[obj.palette]) d.palette = obj.palette;
+  if (obj.labels && typeof obj.labels === "object") {
+    if (obj.labels.buttons) for (const id of BTN_IDS) if (obj.labels.buttons[id]) d.labels.buttons[id] = String(obj.labels.buttons[id]);
+    if (obj.labels.encoders) for (const id of ENC_IDS) if (obj.labels.encoders[id]) d.labels.encoders[id] = String(obj.labels.encoders[id]);
+  }
+  d.states = [];
+  for (const e of entries.slice(0, MAX_STATES)) {
+    const s = blankState(d.states.length);
+    if (typeof e.name === "string" && e.name.trim()) s.name = e.name;
+    s.notes = typeof e.notes === "string" ? e.notes : "";
+    s.export = e.export !== false;
+    const src = Array.isArray(e.keys) ? e.keys : Array.isArray(e.leds) ? e.leds : [];
+    for (let k = 0; k < KEY_N; k++) if (src[k] != null) s.keys[k] = clampLevel(src[k]);
+    const kl = e.keyLabels || {};
+    for (const key of Object.keys(kl)) { const idx = Math.round(Number(key)); if (idx >= 0 && idx < KEY_N && kl[key]) s.keyLabels[idx] = String(kl[key]); }
+    const kn = e.keyNotes || e.annotations;
+    if (Array.isArray(kn)) for (const a of kn) { const idx = Math.round(Number(a.key ?? a.index)); if (idx >= 0 && idx < KEY_N && a.text) s.keyNotes[idx] = String(a.text); }
+    else if (kn && typeof kn === "object") for (const key of Object.keys(kn)) { const idx = Math.round(Number(key)); if (idx >= 0 && idx < KEY_N && kn[key]) s.keyNotes[idx] = String(kn[key]); }
+    if (e.buttons && typeof e.buttons === "object") for (const id of BTN_IDS) if (e.buttons[id] != null) s.buttons[id] = clampLevel(e.buttons[id]);
+    s.playGreen = e.playGreen ? 1 : 0;
+    if (e.buttonLabels) for (const id of BTN_IDS) if (e.buttonLabels[id]) s.buttonLabels[id] = String(e.buttonLabels[id]);
+    if (e.buttonNotes) for (const id of BTN_IDS) if (e.buttonNotes[id]) s.buttonNotes[id] = String(e.buttonNotes[id]);
+    if (e.encoders && typeof e.encoders === "object") for (const id of ENC_IDS) {
+      const v = e.encoders[id]; if (!v) continue;
+      if (typeof v === "string") s.encoders[id].note = v;
+      else { s.encoders[id].note = typeof v.note === "string" ? v.note : ""; s.encoders[id].value = v.value == null ? "" : String(v.value); }
+    }
+    if (e.screen && typeof e.screen === "object") s.screen = normScreen(e.screen);
+    d.states.push(s);
+  }
+  return d;
+}
+function normScreen(sc) {
+  const d = defaultScreen();
+  const o = { ...d, ...sc };
+  o.palette = PALETTES[sc.palette] ? sc.palette : null;
+  o.header = sc.header === null ? null : { ...d.header, ...(sc.header || {}) };
+  o.cards = sc.cards === null ? null : (Array.isArray(sc.cards) ? sc.cards.slice(0, 4).map(c => c ? { label: String(c.label ?? ""), value: String(c.value ?? ""), hot: !!c.hot, sub: c.sub ? String(c.sub) : "" } : null) : d.cards);
+  o.panel = sc.panel && typeof sc.panel === "object" ? sc.panel : d.panel;
+  o.footer = sc.footer === null ? null : (sc.footer && typeof sc.footer === "object" ? sc.footer : d.footer);
+  o.note = typeof sc.note === "string" ? sc.note : "";
+  return o;
+}
+
+/* =====================================================================
+   Screen renderer: a 240x240 Felucca-style mock-up drawn on a canvas.
+   Layout (ui.c): header 0..24, four cards 28..72 (57 x 44 at x 3 + 59 c),
+   the panel 76..198, footer 202..240. Type: S 12 px, M 15 px, L 28 px.
+   ===================================================================== */
+const SCR_PX = 240;
+const FONT_FAMILY = '"Inter Tight", Inter, -apple-system, "Helvetica Neue", Arial, sans-serif';
+function font(px, w) { return `${w || 500} ${px}px ${FONT_FAMILY}`; }
+
+function renderScreen(scr, palName, S) {
+  const cv = document.createElement("canvas"); cv.width = SCR_PX * S; cv.height = SCR_PX * S;
+  const ctx = cv.getContext("2d"); ctx.scale(S, S);
+  const P = palette(scr.palette || palName || "GREEN");
+  ctx.fillStyle = P.BG; ctx.fillRect(0, 0, SCR_PX, SCR_PX);
+  const rr = (x, y, w, h, r, fill, stroke) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); } };
+  const text = (s, x, y, px, col, align, w) => { if (s == null || s === "") return 0; ctx.font = font(px, w); ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "alphabetic"; ctx.fillText(String(s), x, y); return ctx.measureText(String(s)).width; };
+  const tw = (s, px, w) => { ctx.font = font(px, w); return ctx.measureText(String(s)).width; };
+  const fit = (s, px, maxW, w) => { s = String(s); if (tw(s, px, w) <= maxW) return s; while (s.length > 1 && tw(s + "…", px, w) > maxW) s = s.slice(0, -1); return s + "…"; };
+  const chip = (x, y, label, on) => {   // a keycap chip: KEY fill, INK label, S 12 px
+    const w = Math.max(18, tw(label, 10, 600) + 10);
+    rr(x, y - 10, w, 14, 3, on === false ? P.DIM : P.KEY);
+    text(label, x + w / 2, y + 1, 10, P.INK, "center", 600);
+    return w;
+  };
+  const hasCards = Array.isArray(scr.cards) && scr.cards.length;
+  const Y_PANEL = hasCards ? 76 : 28, H_PANEL = (scr.footer === null ? 240 : 198) - Y_PANEL;
+
+  /* header */
+  if (scr.header !== null) {
+    const h = scr.header || {};
+    let x = 8;
+    const icon = h.icon || "stop";
+    ctx.fillStyle = icon === "stop" ? P.MID : icon === "rec" ? P.REC : P.THEME;
+    if (icon === "play") { ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x + 11, 12); ctx.lineTo(x, 18); ctx.closePath(); ctx.fill(); }
+    else if (icon === "rec") { ctx.beginPath(); ctx.arc(x + 6, 12, 5.5, 0, Math.PI * 2); ctx.fill(); }
+    else if (icon === "loop") { ctx.strokeStyle = P.THEME; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x + 6, 12, 5, 0.3, Math.PI * 1.75); ctx.stroke(); }
+    else if (icon !== "none") { ctx.fillRect(x, 7, 10, 10); }
+    const bare = icon === "none" && !(h.bpm != null && h.bpm !== "");
+    x = bare ? 0 : 26;
+    if (h.rec) { ctx.fillStyle = P.REC; ctx.beginPath(); ctx.arc(x + 6, 12, 5, 0, Math.PI * 2); ctx.fill(); x += 18; }
+    if (h.bpm != null && h.bpm !== "") { text(h.bpm, x + 2, 17, 15, h.hot ? P.ACCENT : P.THEME, "left", 600); x += tw(h.bpm, 15, 600) + 6; if (h.unit !== false) { text("bpm", x, 17, 9, P.MID); x += 22; } }
+    // right: text, usb, battery (measured first so the middle text stops before them)
+    let rx = 236, rightW = 0;
+    if (h.batt != null && h.batt !== false) rightW += 26;
+    if (h.usb) rightW += 22;
+    if (h.right) rightW += tw(h.right, 12, 600) + 8;
+    if (h.mid) text(fit(h.mid, bare ? 15 : 12, 236 - rightW - x - 10, 600), x + 8, bare ? 18 : 16.5, bare ? 15 : 12, colOf(P, h.midCol, P.TEXT), "left", 600);
+    if (h.batt != null && h.batt !== false) {
+      rx -= 20; rr(rx, 7, 16, 10, 2, null, P.MID); ctx.fillStyle = P.MID; ctx.fillRect(rx + 16.5, 9.5, 2, 5);
+      const lvl = Math.max(0, Math.min(4, Number(h.batt))); ctx.fillStyle = lvl <= 1 ? P.ACCENT : P.THEME;
+      if (lvl > 0) ctx.fillRect(rx + 2, 9, 12 * lvl / 4, 6);
+      rx -= 6;
+    }
+    if (h.usb) { text("USB", rx, 16, 9, P.MID, "right", 600); rx -= 22; }
+    if (h.right) text(h.right, rx, bare ? 18 : 16.5, bare ? 15 : 12, colOf(P, h.rightCol, bare ? P.TEXT : P.MID), "right", 600);
+  }
+
+  /* cards: label (S, MID) at top, value (M, THEME; hot: ACCENT) below, a gauge dash */
+  if (hasCards) {
+    scr.cards.forEach((c, i) => {
+      const x = 3 + 59 * i, y = 28;
+      rr(x, y, 57, 44, 5, P.SURF);
+      if (!c) return;
+      text(fit(c.label, 10, 51, 600), x + 5, y + 13, 10, P.MID, "left", 600);
+      const col = c.hot ? P.ACCENT : P.THEME;
+      let v = String(c.value ?? ""), px = 15;
+      if (tw(v, 15, 600) > 51) px = 12;
+      if (tw(v, px, 600) > 51) v = fit(v, px, 51, 600);
+      text(v, x + 5, y + 33, px, col, "left", 600);
+      if (c.sub) text(fit(c.sub, 9, 51), x + 5, y + 41, 9, P.DIM);
+      else { ctx.fillStyle = c.hot ? P.ACCENT : P.LINE; ctx.fillRect(x + 5, y + 38, 47, 1.5); }
+    });
+  }
+
+  /* panel */
+  const p = scr.panel || { kind: "text", lines: [] };
+  const kind = p.kind || "text";
+  const surfaced = p.surface != null ? !!p.surface : (hasCards && !["chord","big","scope","notes","geek"].includes(kind));
+  if (surfaced) rr(3, Y_PANEL, 234, H_PANEL, 5, P.SURF);
+  const px0 = 10, pw = 220, py0 = Y_PANEL, ph = H_PANEL;
+  const title = () => { let y = py0 + 16; if (p.title) { text(p.title, px0, y, 15, P.THEME, "left", 600); if (p.subtitle) text(fit(p.subtitle, 11, pw - tw(p.title, 15, 600) - 8), px0 + tw(p.title, 15, 600) + 6, y, 11, P.MID); y += 8; } return y; };
+
+  function drawKeyboard(y, h, lit, labels) {
+    // 16 white keys across 224 px, black keys 9 px wide in their true slots
+    const ww = 224 / 16, x0 = 8, bw = 8, bh = h * 0.6;
+    const litCol = new Map();
+    (lit || []).forEach(v => { const o = typeof v === "object" && v ? v : { k: v }; const i = resolveKey(o.k); if (i != null) litCol.set(i, colOf(P, o.col, null)); });
+    const litSet = new Set(litCol.keys());
+    for (const k of KEYS) if (k.role === "white") {
+      const x = x0 + k.place * ww;
+      rr(x + 0.5, y, ww - 1, h, 1.5, litSet.has(k.i) ? (litCol.get(k.i) || P.THEME) : (P.light ? P.SURF : P.KEY), null);
+      if (labels && labels[k.i]) text(labels[k.i], x + ww / 2, y + h - 3, 7, litSet.has(k.i) ? P.INK : P.BG, "center", 600);
+    }
+    for (const k of KEYS) if (k.role === "black") {
+      // black key sits over the gap after white key (its left neighbour)
+      const leftWhite = KEYS.slice(0, k.i).filter(q => q.role === "white").length;   // whites before it
+      const x = x0 + leftWhite * ww - bw / 2;
+      rr(x, y, bw, bh, 1, litSet.has(k.i) ? (litCol.get(k.i) || P.ACCENT) : P.BG, P.LINE);
+      if (labels && labels[k.i]) text(labels[k.i], x + bw / 2, y + bh - 2, 6, litSet.has(k.i) ? P.INK : P.MID, "center", 600);
+    }
+  }
+  function resolveKey(v) {
+    if (typeof v === "number") return v >= 0 && v < KEY_N ? v : null;
+    const s = String(v).trim();
+    if (/^\d+$/.test(s)) return resolveKey(Number(s));
+    const k = KEYS.find(q => q.name.toLowerCase() === s.toLowerCase()); return k ? k.i : null;
+  }
+  function drawChordName(cx, cy, root, quality, sup, size, cols, maxW, squeeze) {
+    // root letter (bold), quality same baseline smaller, extensions as superscript (Orchid Standard Framework);
+    // the whole name is squeezed horizontally to fit maxW (Orchid's condensed long names); squeeze < 1 forces it
+    cols = cols || {}; maxW = maxW || 224;
+    const rs = size, qs = Math.round(size * 0.58), ss = Math.round(size * 0.38);
+    const w = tw(root, rs, 700) + (quality ? tw(quality, qs, 600) + 2 : 0) + (sup ? tw(sup, ss, 600) + 3 : 0);
+    const sx = Math.min(1, maxW / w) * (squeeze || 1);
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(sx, 1); ctx.translate(-cx, -cy);
+    let x = cx - w / 2;
+    text(root, x, cy, rs, colOf(P, cols.root, P.TEXT), "left", 700); x += tw(root, rs, 700) + 2;
+    if (quality) { text(quality, x, cy, qs, colOf(P, cols.quality, colOf(P, cols.root, P.TEXT)), "left", 600); x += tw(quality, qs, 600) + 2; }
+    if (sup) text(sup, x + 1, cy - rs * 0.52, ss, colOf(P, cols.sup, P.THEME), "left", 600);
+    ctx.restore();
+    return w * sx;
+  }
+  /* note bubbles: coloured discs with the note names, in voiced order (cx centred, y the disc centre) */
+  function drawBubbles(items, cx, y, r, style) {
+    if (style !== "disc") {   // plain text tokens in their colours, extensions marked by a small block under them
+      const px = items.length > 5 ? 13 : 16, widths = items.map(it => tw((typeof it === "string" ? it : it.t), px, 700)), gapw = 14;
+      const total = widths.reduce((a, b) => a + b, 0) + gapw * (items.length - 1);
+      let x = cx - total / 2;
+      items.forEach((it, i) => { const b = typeof it === "string" ? { t: it } : it, col = colOf(P, b.col, P.TEXT);
+        text(b.t, x, y + 5, px, col, "left", 700);
+        if (b.mark) { ctx.fillStyle = col; ctx.fillRect(x, y + 10, widths[i], 3); }
+        x += widths[i] + gapw; });
+      return;
+    }
+    r = r || 15;
+    const gap = r * 2 + 8, x0 = cx - (items.length - 1) * gap / 2;
+    items.forEach((it, i) => {
+      const b = typeof it === "string" ? { t: it } : it, x = x0 + i * gap, col = colOf(P, b.col, P.TEXT);
+      if (b.square) rr(x - r, y - r, 2 * r, 2 * r, 5, b.hollow ? null : col, b.hollow ? col : null);
+      else { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); if (b.hollow) { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); } else { ctx.fillStyle = col; ctx.fill(); } }
+      text(b.t, x, y + 4, b.t.length > 2 ? 10 : 12, b.hollow ? col : P.BG, "center", 700);
+    });
+  }
+
+  if (kind === "chord") {
+    const hasChord = p.root && String(p.root).length;
+    if (p.key) text(p.key, px0, py0 + 14, 12, P.MID, "left", 600);
+    if (p.trans) text(p.trans, 236 - 6, py0 + 14, 12, P.MID, "right", 600);
+    if (hasChord) {
+      const size = p.size || (hasCards ? 64 : 104);
+      const ringed = scr.ring != null && scr.ring !== false;
+      const extra = (p.notes ? 1 : 0) + (p.line ? 1 : 0) + (p.bubbles ? 1.6 : 0) + (ringed && p.bubbles ? 2 : 0);
+      if (p.block) rr(0, py0, 240, ph, 0, colOf(P, p.block, P.THEME));
+      drawChordName(120, py0 + ph / 2 + size * 0.34 - extra * 9, p.root, p.quality || "", p.sup || "", size, p.cols, 224, p.squeeze);
+      let ly = py0 + ph - 10 - (ringed ? 22 : 0);
+      if (p.line) { text(p.line, 120, ly, 14, colOf(P, p.lineCol, P.MID), "center", 500); ly -= 18; }
+      if (p.notes) { text(p.notes, 120, ly, 15, P.TEXT, "center", 500); ly -= 18; }
+      if (p.bubbles) drawBubbles(p.bubbles, 120, ly - 12, p.bubbleR, p.bubbleStyle);
+    } else {
+      text(p.hint || "", 120, py0 + ph / 2 + 5, 14, P.DIM, "center");
+    }
+  } else if (kind === "keyboard") {
+    if (p.root) drawChordName(120, py0 + 40, p.root, p.quality || "", p.sup || "", p.size || 40, p.cols);
+    else if (p.title) text(p.title, 120, py0 + 36, p.titleSize || 15, colOf(P, p.col, P.THEME), "center", 600);
+    if (p.key) text(p.key, px0, py0 + 14, 12, P.MID, "left", 600);
+    const kh = Math.min(52, ph - 64);
+    drawKeyboard(py0 + ph - kh - 8, kh, p.lit, p.labels);
+    if (p.notes) text(p.notes, 120, py0 + ph - kh - 16, 12, P.MID, "center");
+  } else if (kind === "notes") {
+    if (p.key) text(p.key, px0, py0 + 14, 12, P.MID, "left", 600);
+    drawChordName(120, py0 + 52, p.root || "", p.quality || "", p.sup || "", p.size || 44);
+    const notes = Array.isArray(p.notes) ? p.notes : String(p.notes || "").split(/\s+/).filter(Boolean);
+    const cw = Math.min(40, 220 / Math.max(1, notes.length));
+    const x0 = 120 - cw * notes.length / 2;
+    notes.forEach((n, i) => { rr(x0 + i * cw + 2, py0 + 68, cw - 4, 36, 4, P.SURF); text(n, x0 + i * cw + cw / 2, py0 + 92, 15, P.THEME, "center", 600); });
+    if (p.line) text(p.line, 120, py0 + ph - 8, 11, P.DIM, "center");
+  } else if (kind === "geek") {
+    if (p.key) text(p.key, px0, py0 + 14, 12, P.MID, "left", 600);
+    if (p.trans) text(p.trans, 230, py0 + 14, 12, P.MID, "right", 600);
+    drawChordName(70, py0 + 56, p.root || "", p.quality || "", p.sup || "", 40);
+    const notes = Array.isArray(p.notes) ? p.notes : String(p.notes || "").split(/\s+/).filter(Boolean);
+    notes.forEach((n, i) => text(n, 236 - 6, py0 + 30 + i * 14, 12, i === notes.length - 1 ? P.THEME : P.TEXT, "right", 600));
+    const lines = p.lines || [];
+    lines.forEach((l, i) => text(fit(l, 10, 150), px0, py0 + 72 + i * 11, 10, P.MID));
+    drawKeyboard(py0 + ph - 30, 26, p.lit, p.labels);
+  } else if (kind === "tiles") {
+    let y = title();
+    const cols = p.cols || 4, rows = p.rows || 4, gap = 4;
+    const gx = 8, gy = y + 4, gw = 224, gh = py0 + ph - gy - 6;
+    const cw = (gw - gap * (cols - 1)) / cols, ch = (gh - gap * (rows - 1)) / rows;
+    (p.cells || []).slice(0, cols * rows).forEach((c, i) => {
+      const x = gx + (i % cols) * (cw + gap), yy = gy + Math.floor(i / cols) * (ch + gap);
+      if (c == null) return;
+      const cell = typeof c === "string" ? { t: c } : c;
+      const fill = cell.acc ? P.ACCENT : cell.on ? P.SEL : cell.dim ? P.RAISE : P.RAISE;
+      rr(x, yy, cw, ch, 3, cell.off ? null : fill, cell.off ? P.LINE : null);
+      const ink = (cell.acc || cell.on) ? P.INK : cell.dim ? P.DIM : P.TEXT;
+      const px = cell.sub ? 11 : (cw < 40 ? 10 : 12);
+      text(fit(cell.t ?? "", px, cw - 4, 600), x + cw / 2, yy + ch / 2 + (cell.sub ? -1 : 4), px, ink, "center", 600);
+      if (cell.sub) text(fit(cell.sub, 8, cw - 4), x + cw / 2, yy + ch / 2 + 10, 8, (cell.acc || cell.on) ? P.INK : P.MID, "center");
+      if (cell.mark) { ctx.fillStyle = cell.on ? P.INK : P.ACCENT; ctx.beginPath(); ctx.arc(x + cw - 5, yy + 5, 2, 0, Math.PI * 2); ctx.fill(); }
+    });
+  } else if (kind === "list") {
+    const big = !!p.big, ringed = scr.ring != null && scr.ring !== false;
+    let y = big && !p.title ? py0 + 6 : title();
+    if (p.title && p.col) { /* a coloured title: redraw it in the list's colour */ rr(px0 - 2, py0 + 2, tw(p.title, 15, 600) + 4, 18, 0, surfaced ? P.SURF : P.BG); text(p.title, px0, py0 + 16, 15, colOf(P, p.col, P.THEME), "left", 600); }
+    const items = p.items || [], rh = p.rowH || (big ? 28 : 17), fs = big ? 17 : 12;
+    let maxRows = Math.floor((py0 + ph - y - 2) / rh);
+    if (big && ringed) maxRows = Math.min(maxRows, 5);
+    if (big) y += Math.floor((py0 + ph - y - Math.min(items.length, maxRows) * rh) / 2);   // centred
+    const lx = big && ringed ? 34 : big ? 4 : 6, lw = 240 - 2 * lx;
+    let first = 0; if (p.sel != null && p.sel >= maxRows) first = p.sel - maxRows + 1;
+    items.slice(first, first + maxRows).forEach((it, j) => {
+      const i = first + j, yy = y + j * rh;
+      const item = typeof it === "string" ? { t: it } : it;
+      const sel = i === p.sel;
+      const icol = colOf(P, item.col || p.col, P.TEXT), scol = colOf(P, p.selCol, big ? P.TEXT : P.SEL);
+      if (sel) rr(lx, yy - 1, lw, rh - 1, 3, scol);
+      text(fit(item.t, fs, item.v ? lw - 70 : lw - 16, 600), lx + 8, yy + rh - (big ? 8 : 6), fs, sel ? P.INK : item.dim ? P.DIM : icol, "left", sel ? 600 : 500);
+      if (item.v != null) text(item.v, lx + lw - 8, yy + rh - (big ? 8 : 6), fs, sel ? P.INK : colOf(P, item.vcol || p.vcol, P.THEME), "right", 600);
+    });
+    if (items.length > maxRows && !ringed) { const sh = maxRows * rh - 4, th = Math.max(8, sh * maxRows / items.length); ctx.fillStyle = P.LINE; ctx.fillRect(lx + lw + 2, y, 1.5, sh); ctx.fillStyle = P.MID; ctx.fillRect(lx + lw + 2, y + sh * first / items.length, 1.5, th); }
+  } else if (kind === "big") {
+    const size = p.size || (hasCards ? 72 : 118);
+    const vy = py0 + ph / 2 + size * 0.34 - (p.sub ? 12 : 4);
+    if (p.block) rr(0, py0, 240, ph, 0, colOf(P, p.block, P.THEME));
+    const draw = (col) => { const w = tw(p.value, size, 700), sx = Math.min(1, 228 / w); ctx.save(); ctx.translate(120, vy); ctx.scale(sx, 1); ctx.translate(-120, -vy); text(p.value, 120, vy, size, col, "center", 700); ctx.restore(); };
+    draw(p.block ? P.BG : colOf(P, p.col, P.TEXT));
+    if (p.pct != null) {              // the level as an inverted fill rising from the bottom (Orchid's Volume screen)
+      const fh = Math.round(ph * Math.max(0, Math.min(1, Number(p.pct))));
+      ctx.save(); ctx.beginPath(); ctx.rect(0, py0 + ph - fh, 240, fh); ctx.clip();
+      ctx.fillStyle = P.TEXT; ctx.fillRect(0, py0 + ph - fh, 240, fh); draw(P.BG); ctx.restore();
+    }
+    if (p.sub) text(p.sub, 120, py0 + ph - 26, 15, p.block ? P.BG : P.TEXT, "center", 600);
+    if (p.label) text(p.label, 120, py0 + ph - 8, 14, p.block ? P.BG : P.MID, "center", 500);
+    if (p.title) text(p.title, px0, py0 + 14, 12, P.MID, "left", 600);
+  } else if (kind === "scope") {
+    const cy = py0 + ph / 2, amp = (p.amp ?? 0.6) * ph * 0.4, f = p.freq || 3;
+    ctx.strokeStyle = P.LINE; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(6, cy); ctx.lineTo(234, cy); ctx.stroke();
+    ctx.strokeStyle = P.THEME; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let x = 6; x <= 234; x++) { const t = (x - 6) / 228; const v = Math.sin(t * Math.PI * 2 * f) * (0.7 + 0.3 * Math.sin(t * 17)) + 0.25 * Math.sin(t * Math.PI * 2 * f * 3); const yy = cy - v * amp; x === 6 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy); }
+    ctx.stroke();
+    if (p.root) drawChordName(120, py0 + 30, p.root, p.quality || "", p.sup || "", 28);
+  } else if (kind === "splash") {
+    // a 70s ribbon: nested stripes along a rounded zig-zag path; `phase` 0..1 slides it (one animation frame)
+    const bands = p.bands || ["coral", "orange", "cream", "teal", "blue"], W0 = p.width || 64, step = W0 / bands.length;
+    const phz = (p.phase || 0) * 60, y1 = py0 + 36 + phz, y2 = py0 + ph - 60 + phz, xm = p.xm || 118;
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    bands.forEach((b, i) => {
+      ctx.strokeStyle = colOf(P, b, P.THEME); ctx.lineWidth = W0 - i * step;
+      ctx.beginPath(); ctx.moveTo(-40, y1); ctx.lineTo(xm, y1); ctx.lineTo(xm, y2); ctx.lineTo(300, y2); ctx.stroke();
+    });
+    ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+    if (p.title) text(p.title, p.titleX || 14, py0 + ph - 14, p.titleSize || 22, colOf(P, p.titleCol, P.TEXT), "left", 700);
+    if (p.sub) text(p.sub, 226, py0 + 18, 12, colOf(P, p.subCol, P.MID), "right", 500);
+  } else if (kind === "dial") {
+    // one value in its knob's colour inside a 270-degree gauge (Orchid's dial screen, OP-1's colour coding)
+    const col = colOf(P, p.col, P.THEME), size = p.size || 88, cx = 120, cy = py0 + ph / 2 - 4, R = p.r || 82;
+    const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
+    ctx.lineCap = "round"; ctx.lineWidth = 9; ctx.strokeStyle = P.LINE; ctx.beginPath(); ctx.arc(cx, cy, R, a0, a1); ctx.stroke();
+    if (p.pct != null) { ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(cx, cy, R, a0, a0 + (a1 - a0) * Math.max(0, Math.min(1, Number(p.pct)))); ctx.stroke(); }
+    for (let i = 0; i <= 12; i++) { const a = a0 + (a1 - a0) * i / 12; ctx.strokeStyle = P.MID; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx + (R - 13) * Math.cos(a), cy + (R - 13) * Math.sin(a)); ctx.lineTo(cx + (R - 17) * Math.cos(a), cy + (R - 17) * Math.sin(a)); ctx.stroke(); }
+    ctx.lineCap = "butt";
+    text(p.value, cx, cy + size * 0.34 - (p.sub ? 8 : 0), size, col, "center", 700);
+    if (p.sub) text(p.sub, cx, cy + size * 0.34 + 14, 14, col, "center", 600);
+    if (p.label) text(p.label, cx, py0 + ph - 8, 15, P.MID, "center", 500);
+  } else if (kind === "arp") {
+    // a performance in motion: the chord name, its notes as discs on a line, the sounding one lifted with a hop arc
+    const notes = p.notes || [], n = notes.length, cx = 120, by = py0 + ph - 46, gap = Math.min(52, 200 / Math.max(1, n - 1));
+    if (p.root) drawChordName(cx, py0 + 50, p.root, p.quality || "", p.sup || "", p.size || 44, p.cols);
+    ctx.strokeStyle = P.LINE; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(14, by + 18); ctx.lineTo(226, by + 18); ctx.stroke();
+    const x0 = cx - (n - 1) * gap / 2, pos = p.pos ?? -1;
+    if (pos >= 0 && n > 1) { const xa = x0 + pos * gap, xb = x0 + ((pos + 1) % n) * gap; ctx.strokeStyle = colOf(P, p.hopCol, P.MID); ctx.setLineDash([3, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(xa, by - 22); ctx.quadraticCurveTo((xa + xb) / 2, by - 70, xb, by - 2); ctx.stroke(); ctx.setLineDash([]); }
+    notes.forEach((it, i) => {
+      const b = typeof it === "string" ? { t: it } : it, col = colOf(P, b.col, P.TEXT), on = i === pos, x = x0 + i * gap, y = on ? by - 22 : by;
+      if (on) { const w = tw(b.t, 15, 700) + 14; rr(x - w / 2, y - 12, w, 24, 3, col); text(b.t, x, y + 5, 15, P.BG, "center", 700); }
+      else text(b.t, x, y + 5, 13, col, "center", 700);
+    });
+    if (p.line) text(p.line, cx, py0 + ph - 8, 13, colOf(P, p.lineCol, P.MID), "center", 500);
+  } else if (kind === "picker") {
+    // one choice at a time: the current item huge (squeezed to fit), the neighbours peeking small and faded above and
+    // below (`orient: "h"`: left and right); square position marks; a label and an optional value under it
+    const items = p.items || [], n = items.length, sel = Math.max(0, Math.min(n - 1, p.sel || 0)), col = colOf(P, p.col, P.TEXT);
+    const ringed = scr.ring != null && scr.ring !== false, horiz = p.orient === "h";
+    const name = i => { const it = items[i]; return typeof it === "string" ? it : (it && it.t) || ""; };
+    const val = p.value != null ? p.value : (typeof items[sel] === "object" && items[sel] ? items[sel].v : null);
+    const hasVal = val != null && val !== "", size = p.size || (horiz ? 36 : 40), maxW = horiz ? (ringed ? 120 : 150) : (ringed ? 170 : 224);
+    const bigH = size * 1.1, valH = hasVal ? 26 : 0, nbH = horiz ? 0 : 22;
+    const labelH = p.label ? 18 : 0, marksH = ringed ? 0 : 10;
+    const stackH = nbH + bigH + valH + nbH, top = py0 + (ph - labelH - marksH - stackH) / 2 - 2;
+    const bigBase = top + nbH + bigH * 0.8;
+    const squeezed = (t, x, y, px, c) => { const w = tw(t, px, 700), sx = Math.min(1, maxW / w); ctx.save(); ctx.translate(x, y); ctx.scale(sx, 1); ctx.translate(-x, -y); text(t, x, y, px, c, "center", 700); ctx.restore(); };
+    if (p.title) text(p.title, px0, py0 + 16, 14, colOf(P, p.titleCol, P.MID), "left", 600);
+    if (horiz) {
+      const lx = ringed ? 36 : 6, rx = ringed ? 204 : 234, bigW = Math.min(tw(name(sel), size, 700), maxW), room = (rx - lx - bigW) / 2 - 10;
+      if (sel > 0 && room > 24) text(fit(name(sel - 1), 13, room), lx, bigBase - 4, 13, P.DIM, "left", 500);
+      if (sel < n - 1 && room > 24) text(fit(name(sel + 1), 13, room), rx, bigBase - 4, 13, P.DIM, "right", 500);
+    } else {
+      if (sel > 0) text(fit(name(sel - 1), 15, maxW), 120, top + 14, 15, P.DIM, "center", 500);
+      if (sel < n - 1) text(fit(name(sel + 1), 15, maxW), 120, top + nbH + bigH + valH + 16, 15, P.DIM, "center", 500);
+    }
+    squeezed(name(sel), 120, bigBase, size, col);
+    if (hasVal) text(String(val), 120, top + nbH + bigH + 20, 20, col, "center", 700);
+    if (p.label) text(p.label, 120, py0 + ph - marksH - (ringed ? 34 : 8), 13, P.MID, "center", 500);
+    if (n > 1 && !ringed) { const mw = Math.min(8, Math.floor(200 / n) - 3), gap = 4, x0 = 120 - (n * mw + (n - 1) * gap) / 2; for (let i = 0; i < n; i++) { ctx.fillStyle = i === sel ? col : P.LINE; ctx.fillRect(x0 + i * (mw + gap), py0 + ph - 8, mw, 4); } }
+  } else if (kind === "meter") {
+    // a knob's value huge in its colour over a stripe meter: `segments` bold blocks, filled up to `pct`
+    const col = colOf(P, p.col, P.THEME), size = p.size || 104, n = p.segments || 12, pct = Math.max(0, Math.min(1, Number(p.pct ?? 0)));
+    text(p.value, 120, py0 + ph / 2 + size * 0.2, size, col, "center", 700);
+    if (p.sub) text(p.sub, 120, py0 + ph / 2 + size * 0.2 + 22, 15, col, "center", 600);
+    const mw = 224, gap = 4, sw = (mw - gap * (n - 1)) / n, my = py0 + ph - 46, mh = p.thick || 14, filled = Math.round(pct * n);
+    for (let i = 0; i < n; i++) { ctx.fillStyle = i < filled ? col : P.LINE; ctx.fillRect(8 + i * (sw + gap), my, sw, mh); }
+    if (p.label) text(p.label, 120, py0 + ph - 10, 14, P.MID, "center", 500);
+    if (p.title) text(p.title, px0, py0 + 16, 14, P.MID, "left", 600);
+  } else if (kind === "stripes") {
+    // mod racing stripes: bold horizontal bands in the `bands` colours across the lower part, the name above;
+    // `phase` 0..1 slides the bands sideways (an animation frame), `skew` tilts them
+    const bands = p.bands || ["red", "white", "blue"], bh = p.band || 16, gap = p.gap || 8, skew = p.skew || 0;
+    const total = bands.length * bh + (bands.length - 1) * gap, y0 = (p.y != null ? py0 + p.y : py0 + ph - total - 24);
+    const shift = (p.phase || 0) * 40;
+    ctx.save(); ctx.transform(1, 0, skew, 1, 0, 0);
+    bands.forEach((c, i) => { ctx.fillStyle = colOf(P, c, P.THEME); ctx.fillRect(-60 + shift - skew * (y0 + i * (bh + gap)), y0 + i * (bh + gap), 360, bh); });
+    ctx.restore();
+    if (p.title) { const px = p.titleSize || 34, w = tw(p.title, px, 800), sx = Math.min(1, 224 / w); ctx.save(); ctx.translate(120, 0); ctx.scale(sx, 1); ctx.translate(-120, 0); text(p.title, 120, p.titleY != null ? py0 + p.titleY : y0 - 22, px, colOf(P, p.titleCol, P.TEXT), "center", 800); ctx.restore(); }
+    if (p.sub) text(p.sub, 120, py0 + ph - 8, 12, P.MID, "center", 500);
+  } else if (kind === "roundel") {
+    // the mod target: concentric rings in `rings` colours (outer first), an optional band of text across the middle
+    const rings = p.rings || ["blue", "white", "red"], cx = p.cx || 120, cy = p.cy || py0 + ph / 2, R = p.r || Math.min(ph, 220) / 2 - 4;
+    rings.forEach((c, i) => { ctx.beginPath(); ctx.arc(cx, cy, R * (1 - i / rings.length), 0, Math.PI * 2); ctx.fillStyle = colOf(P, c, P.THEME); ctx.fill(); });
+    if (p.title) { const px = p.titleSize || 26, w = tw(p.title, px, 800) + 20; rr(cx - w / 2, cy - px * 0.7, w, px * 1.3, 0, colOf(P, p.bandCol, P.BG)); text(p.title, cx, cy + px * 0.33, px, colOf(P, p.titleCol, P.TEXT), "center", 800); }
+    if (p.sub) text(p.sub, 232, py0 + ph - 8, 12, P.MID, "right", 500);
+  } else if (kind === "params") {
+    // a sound-edit page: four columns for KNOB 1-4 (blue orange cream coral), each a glyph, a label and a value
+    const KC = ["blue", "orange", "cream", "coral"], cols = p.cols || [], cw = 56, x0 = 8;
+    let y = py0 + 4;
+    if (p.title) { text(p.title, px0, y + 14, 15, colOf(P, p.col, P.TEXT), "left", 600); if (p.page) text(p.page, 230, y + 14, 12, P.MID, "right", 500); y += 22; }
+    const gy = y + 10, gh = 64;
+    cols.slice(0, 4).forEach((c, i) => {
+      if (!c) return;
+      const col = colOf(P, c.col || KC[i], P.TEXT), x = x0 + i * (cw + 2), cx = x + cw / 2, pct = Math.max(0, Math.min(1, Number(c.pct ?? 0.5)));
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.5; ctx.lineJoin = "round"; ctx.lineCap = "round";
+      const g = c.glyph || "knob";
+      if (g === "env") { const e = c.env || [0.2, 0.3, 0.6, 0.3], w = cw - 10, bx = x + 5, by = gy + gh - 6;
+        const ax = bx + w * 0.3 * e[0], dx = ax + w * 0.3 * e[1], sx = bx + w * 0.72, rx = sx + w * 0.28 * e[3], sy = by - (gh - 14) * e[2];
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ax, gy + 8); ctx.lineTo(dx, sy); ctx.lineTo(sx, sy); ctx.lineTo(rx, by); ctx.stroke(); }
+      else if (g === "wave") { ctx.beginPath(); for (let k = 0; k <= 44; k++) { const t = k / 44, xx = x + 6 + t * (cw - 12), yy = gy + gh / 2 - Math.sin(t * Math.PI * 2 * (c.cycles || 2)) * (gh / 2 - 10) * (0.3 + 0.7 * pct); k ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.stroke(); }
+      else if (g === "saw") { ctx.beginPath(); for (let k = 0; k < (c.cycles || 2); k++) { const w = (cw - 12) / (c.cycles || 2), xx = x + 6 + k * w; ctx.moveTo(xx, gy + gh - 10); ctx.lineTo(xx + w, gy + 10); ctx.lineTo(xx + w, gy + gh - 10); } ctx.stroke(); }
+      else if (g === "square") { ctx.beginPath(); const n = c.cycles || 2, w = (cw - 12) / n; for (let k = 0; k < n; k++) { const xx = x + 6 + k * w; ctx.moveTo(xx, gy + gh - 10); ctx.lineTo(xx, gy + 10); ctx.lineTo(xx + w * pct, gy + 10); ctx.lineTo(xx + w * pct, gy + gh - 10); ctx.lineTo(xx + w, gy + gh - 10); } ctx.stroke(); }
+      else if (g === "filter") { const fx = x + 6 + (cw - 12) * pct; ctx.beginPath(); ctx.moveTo(x + 6, gy + 18); ctx.lineTo(fx - 8, gy + 18); ctx.quadraticCurveTo(fx, gy + 18, fx + 2, gy + 10); ctx.quadraticCurveTo(fx + 6, gy + gh - 8, fx + 16, gy + gh - 8); ctx.stroke(); ctx.setLineDash([2, 3]); ctx.strokeStyle = P.MID; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 6, gy + 18); ctx.lineTo(x + cw - 6, gy + 18); ctx.stroke(); ctx.setLineDash([]); }
+      else if (g === "bar") { const bh = (gh - 8) * pct; ctx.strokeStyle = P.LINE; ctx.lineWidth = 1; for (let k = 0; k < 7; k++) { const yy = gy + 4 + k * (gh - 8) / 6; ctx.beginPath(); ctx.moveTo(cx - 10, yy); ctx.lineTo(cx + 10, yy); ctx.stroke(); } rr(cx - 9, gy + gh - 4 - bh, 18, bh, 3, col); }
+      else if (g === "steps") { const n = c.n || 8, w = (cw - 10) / n; for (let k = 0; k < n; k++) rr(x + 5 + k * w + 1, gy + gh - 6 - (gh - 14) * (((k * 7) % 11) / 11), w - 2, 3, 1, k / n <= pct ? col : P.LINE); }
+      else if (g === "dots") { const n = Math.round(1 + pct * 11); for (let k = 0; k < 12; k++) { const a = -Math.PI / 2 + k * Math.PI / 6; ctx.beginPath(); ctx.arc(cx + 20 * Math.cos(a), gy + gh / 2 + 20 * Math.sin(a), k < n ? 3.5 : 2, 0, Math.PI * 2); ctx.fillStyle = k < n ? col : P.LINE; ctx.fill(); } }
+      else { // knob: a 270-degree arc with its pointer
+        const r = 20, kcx = cx, kcy = gy + gh / 2, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, a = a0 + (a1 - a0) * pct;
+        ctx.strokeStyle = P.LINE; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a1); ctx.stroke();
+        ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a); ctx.stroke();
+        ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(kcx + 6 * Math.cos(a), kcy + 6 * Math.sin(a)); ctx.lineTo(kcx + (r - 6) * Math.cos(a), kcy + (r - 6) * Math.sin(a)); ctx.stroke(); }
+      ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+      text(fit(c.label || "", 11, cw - 2, 600), cx, gy + gh + 14, 11, P.MID, "center", 600);
+      text(fit(String(c.value ?? ""), 15, cw - 2, 700), cx, gy + gh + 33, 15, col, "center", 700);
+    });
+    if (p.foot) text(p.foot, 120, py0 + ph - 8, 11, P.MID, "center", 500);
+  } else if (kind === "text") {
+    let y = title();
+    let yy = y + 14;
+    (p.lines || []).forEach(l => {
+      const line = typeof l === "string" ? { t: l } : l, px = line.px || 12;
+      yy += px - 12;
+      text(fit(line.t ?? "", px, 220, line.w), line.center ? 120 : px0, yy, px, colOf(P, line.col, P.TEXT), line.center ? "center" : "left", line.w || 500);
+      yy += 16;
+    });
+  } else if (kind === "loop") {
+    // loop page: a big ring with the bar count inside, status under it
+    const cx = 120, cy = py0 + ph / 2 - 6, R = Math.min(ph, 120) / 2 - 6;
+    ctx.lineWidth = 7; ctx.strokeStyle = P.LINE; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    if (p.pct != null) { ctx.strokeStyle = p.rec ? P.REC : P.THEME; ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, Math.min(1, p.pct))); ctx.stroke(); }
+    if (p.layers) for (let i = 0; i < p.layers; i++) { ctx.strokeStyle = P.SEL; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, R - 9 - i * 4, 0, Math.PI * 2); ctx.stroke(); }
+    text(p.value ?? "", cx, cy + 10, 30, P.TEXT, "center", 700);
+    if (p.label) text(p.label, cx, cy + 26, 10, P.MID, "center", 600);
+    if (p.status) text(p.status, cx, py0 + ph - 8, 12, p.rec ? P.REC : P.THEME, "center", 600);
+    if (p.title) text(p.title, px0, py0 + 14, 12, P.MID, "left", 600);
+    if (p.right) text(p.right, 230, py0 + 14, 12, P.MID, "right", 600);
+  }
+
+  /* footer: keycap hints, or left / right text */
+  if (scr.footer !== null) {
+    const f = scr.footer || {};
+    if (Array.isArray(f.hints) && f.hints.length) {
+      const y = 222;
+      const need = f.hints.reduce((a, h) => a + Math.max(18, tw(h.key, 10, 600) + 10) + 4 + (h.act ? tw(h.act, 11, 600) + 10 : 0), 0);
+      const sc = need > 226 ? 226 / need : 1, apx = Math.max(8, Math.round(11 * sc)), gap = sc < 1 ? 4 : 10;
+      let x = 8;
+      f.hints.forEach(h => { const w = chip(x, y, h.key, h.on); x += w + 3; if (h.act) { text(h.act, x, y + 1, apx, h.on === false ? P.DIM : P.TEXT, "left", 600); x += tw(h.act, apx, 600) + gap; } });
+    } else {
+      if (f.text) text(fit(f.text, 12, 224), 120, 226, 12, P.MID, "center", 500);
+      if (f.left) text(fit(f.left, 11, 150, 600), 8, 225, 11, P.MID, "left", 600);
+      if (f.right) text(f.right, 232, 225, 11, P.THEME, "right", 600);
+      if (f.steps) { // a dotted bar/beat strip (loop position)
+        const n = f.steps.n || 16, on = f.steps.on ?? -1;
+        for (let i = 0; i < n; i++) { ctx.fillStyle = i === on ? P.ACCENT : i < (f.steps.filled ?? 0) ? P.THEME : P.LINE; ctx.fillRect(8 + i * (224 / n), 232, 224 / n - 2, 3); }
+      }
+    }
+  }
+
+  /* the ring progress indicator around the edge (Orchid's): a dotted circle, the progress solid */
+  if (scr.ring != null && scr.ring !== false) {
+    const pct = Math.max(0, Math.min(1, Number(scr.ring))), R = 113;
+    ctx.lineWidth = 5; ctx.lineCap = "butt";
+    ctx.strokeStyle = P.LINE; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(120, 120, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    if (pct > 0) { ctx.strokeStyle = scr.ringRec ? P.REC : colOf(P, scr.ringCol, P.THEME); ctx.beginPath(); ctx.arc(120, 120, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct); ctx.stroke(); }
+  }
+  if (scr.message) { // a transient message box
+    const w = Math.min(228, tw(scr.message, 16, 600) + 28);
+    rr(120 - w / 2, 100, w, 40, 8, colOf(P, scr.messageCol, P.TEXT), null); text(scr.message, 120, 125, 16, P.BG, "center", 600);
+  }
+  return cv;
+}
+
+/* ---------- board rendering ---------- */
+const svgNS = "http://www.w3.org/2000/svg";
+const statesEl = document.getElementById("states");
+let ui = []; // per state: { svg, keys:{i:{cap,led,label,badge}}, btns:{id:{...}}, encs:{id:{...}}, scrImg, scrBadge, notesEl, annList }
+
+function mk(tag, attrs) { const el = document.createElementNS(svgNS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; }
+function badgeEl(bx, by) {
+  const g = mk("g", { display: "none" }); g.style.pointerEvents = "none";
+  const c = mk("circle", { cx: bx, cy: by, r: 7.5, fill: "var(--ann)", stroke: "#000", "stroke-width": 0.8 });
+  const t = mk("text", { x: bx, y: by + 3.2, "text-anchor": "middle", "font-size": 9, "font-weight": 700, fill: "#10201a" });
+  g.append(c, t); return { g, t };
+}
+
+function buildStateBox(si) {
+  const s = state.states[si];
+  const box = document.createElement("div"); box.className = "statebox";
+  const head = document.createElement("div"); head.className = "statehead";
+  const nameEl = document.createElement("input"); nameEl.type = "text"; nameEl.className = "sname"; nameEl.value = s.name;
+  nameEl.title = "state " + (si + 1) + " — click to rename (shown in the png export)";
+  nameEl.addEventListener("input", () => { s.name = nameEl.value; });
+  head.appendChild(nameEl);
+  const expLbl = document.createElement("label"); expLbl.className = "exp"; expLbl.title = "include this state in the png exports";
+  const expChk = document.createElement("input"); expChk.type = "checkbox"; expChk.checked = !!s.export;
+  expChk.addEventListener("change", () => { s.export = expChk.checked; });
+  expLbl.append(expChk, "png"); head.appendChild(expLbl);
+  for (const [label, fn, title] of [
+    ["copy", () => stateCopy(si), "copy this whole state"],
+    ["paste", () => statePaste(si), "overwrite this state with the copied one"],
+    ["dup", () => stateDup(si), "duplicate this state"],
+    ["↑", () => stateMove(si, -1), "move up"],
+    ["↓", () => stateMove(si, 1), "move down"],
+    ["clear leds", () => stateClear(si), "turn every LED off"],
+    ["glow", () => stateGlow(si), "set every key and button LED to dim (the idle glow)"],
+    ["screen", () => openScreenAt(si), "edit the screen mock-up"],
+    ["×", () => stateRemove(si), "remove this state"],
+  ]) { const b = document.createElement("button"); b.className = "small"; b.textContent = label; b.title = title; b.addEventListener("click", fn); head.appendChild(b); }
+  box.appendChild(head);
+
+  const svg = mk("svg", { class: "board", viewBox: `0 0 ${DEV_W} ${DEV_H}` });
+  svg.dataset.state = si;
+  svg.appendChild(mk("rect", { x: BODY.x, y: BODY.y, width: BODY.w, height: BODY.h, rx: BODY.r, fill: "var(--plate)", stroke: "#000", "stroke-width": 1.5 }));
+  svg.appendChild(mk("rect", { x: BODY.x + 7, y: BODY.y + 7, width: BODY.w - 14, height: BODY.h - 14, rx: BODY.r - 6, fill: "none", stroke: "#2a2a30", "stroke-width": 1 }));
+  // the keybed and button frames
+  svg.appendChild(mk("rect", { x: 52, y: 306, width: 800, height: 198, rx: 20, fill: "#141417", stroke: "#2a2a30", "stroke-width": 1 }));
+  svg.appendChild(mk("rect", { x: BTN_FRAME.x, y: BTN_FRAME.y, width: BTN_FRAME.w, height: BTN_FRAME.h, rx: BTN_FRAME.r, fill: "#141417", stroke: "#2a2a30", "stroke-width": 1 }));
+  svg.appendChild(mk("rect", { x: OCT_FRAME.x, y: OCT_FRAME.y, width: OCT_FRAME.w, height: OCT_FRAME.h, rx: OCT_FRAME.r, fill: "#141417", stroke: "#2a2a30", "stroke-width": 1 }));
+  // the three dots between black-key groups (printed)
+  for (const dx of [262, 406, 599, 743]) svg.appendChild(mk("circle", { cx: dx, cy: 404, r: 2, fill: "#3a3a42" }));
+
+  const keys = {}, btns = {}, encs = {};
+  // --- keys ---
+  for (const k of KEYS) {
+    const cap = mk("rect", { x: k.x, y: k.y, width: k.w, height: k.h, rx: 21, class: "hit", fill: "var(--cap)", stroke: "#0a0a0c", "stroke-width": 1 });
+    cap.dataset.key = k.i; svg.appendChild(cap);
+    const led = mk("rect", { x: k.cx - 4, y: k.y + 14, width: 8, height: 30, rx: 4, fill: "#1a1a1e", stroke: "#111", "stroke-width": 0.6 });
+    led.style.pointerEvents = "none"; svg.appendChild(led);
+    const glow = mk("rect", { x: k.cx - 9, y: k.y + 9, width: 18, height: 40, rx: 9, fill: "none", display: "none" }); glow.style.pointerEvents = "none"; svg.insertBefore(glow, led);
+    const label = mk("text", { x: k.cx, y: k.y + 62, "text-anchor": "middle", "font-size": 9.5, "font-family": "-apple-system, Helvetica, Arial, sans-serif", "font-weight": 600, fill: "#8a8a92" });
+    label.style.pointerEvents = "none"; svg.appendChild(label);
+    const badge = badgeEl(k.x + k.w - 3, k.y + 3); svg.appendChild(badge.g);
+    keys[k.i] = { cap, led, glow, label, badge };
+  }
+  // --- buttons ---
+  for (const id of BTN_IDS) {
+    const b = BUTTONS[id];
+    const cap = mk("rect", { x: b.x, y: b.y, width: b.w, height: b.h, rx: id.startsWith("OCT") ? 6 : 5, class: "hit", fill: "var(--cap)", stroke: "#0a0a0c", "stroke-width": 1 });
+    cap.dataset.btn = id; svg.appendChild(cap);
+    const label = mk("text", { x: b.cx, y: b.cy + 3.5, "text-anchor": "middle", "font-size": id.startsWith("OCT") ? 9 : 10, "font-family": "-apple-system, Helvetica, Arial, sans-serif", "font-weight": 700, fill: "#9a9aa2" });
+    label.style.pointerEvents = "none"; svg.appendChild(label);
+    const stock = mk("text", { x: b.cx, y: b.y + b.h - 3, "text-anchor": "middle", "font-size": 6.5, "font-family": "-apple-system, Helvetica, Arial, sans-serif", fill: "#6a6a72" });
+    stock.style.pointerEvents = "none"; svg.appendChild(stock);
+    const badge = badgeEl(b.x + b.w - 2, b.y + 2); svg.appendChild(badge.g);
+    btns[id] = { cap, label, stock, badge };
+    if (id === "PLAY") {   // the second, green LED: a small dot at the bottom-left, clickable
+      const g = mk("circle", { cx: b.x + 6, cy: b.y + b.h - 6, r: 3.2, class: "hit", fill: "#1a1a1e", stroke: "#111", "stroke-width": 0.6 });
+      g.dataset.playg = "1"; svg.appendChild(g); btns[id].green = g;
+    }
+  }
+  // --- encoders ---
+  for (const id of ENC_IDS) {
+    const e = ENCODERS[id];
+    const ring = mk("circle", { cx: e.cx, cy: e.cy, r: ENC_R, class: "hit", fill: "#26262c", stroke: "#0a0a0c", "stroke-width": 1 });
+    ring.dataset.enc = id; svg.appendChild(ring);
+    const knurl = mk("circle", { cx: e.cx, cy: e.cy, r: ENC_R - 3, fill: "none", stroke: "#3a3a42", "stroke-width": 2.5, "stroke-dasharray": "2 2.2" }); knurl.style.pointerEvents = "none"; svg.appendChild(knurl);
+    const cap = mk("circle", { cx: e.cx, cy: e.cy, r: ENC_CAP, fill: "#35353c" }); cap.style.pointerEvents = "none"; svg.appendChild(cap);
+    const ind = mk("line", { x1: e.cx, y1: e.cy - 4, x2: e.cx, y2: e.cy - ENC_CAP + 1, stroke: e.pot ? "#ffffff" : "#c8c8d0", "stroke-width": 2, "stroke-linecap": "round" }); ind.style.pointerEvents = "none"; svg.appendChild(ind);
+    const stock = mk("text", { x: e.cx, y: e.labelY, "text-anchor": "middle", "font-size": 9, "font-family": "ui-monospace, Menlo, monospace", fill: "#8a8a92" });
+    stock.textContent = id === "ALGORITHM" ? "ALGORITHM" : id; stock.style.pointerEvents = "none"; svg.appendChild(stock);
+    const fn = mk("text", { x: e.cx, y: e.cy + ENC_R + 12, "text-anchor": "middle", "font-size": 9.5, "font-family": "-apple-system, Helvetica, Arial, sans-serif", "font-weight": 600, fill: "var(--text)" }); fn.style.pointerEvents = "none"; svg.appendChild(fn);
+    const val = mk("text", { x: e.cx, y: e.cy + ENC_R + 24, "text-anchor": "middle", "font-size": 9.5, "font-family": "ui-monospace, Menlo, monospace", fill: "var(--accent)" }); val.style.pointerEvents = "none"; svg.appendChild(val);
+    const badge = badgeEl(e.cx + ENC_R - 4, e.cy - ENC_R + 4); svg.appendChild(badge.g);
+    encs[id] = { ring, fn, val, badge };
+  }
+  // --- screen ---
+  svg.appendChild(mk("rect", { x: SCREEN.x, y: SCREEN.y, width: SCREEN.w, height: SCREEN.h, rx: 10, fill: "#0b0b0e", stroke: "#000", "stroke-width": 1 }));
+  const scrImg = mk("image", { x: SCREEN.ax, y: SCREEN.ay, width: SCREEN.aw, height: SCREEN.ah, class: "hit", preserveAspectRatio: "none" });
+  scrImg.dataset.screen = "1"; svg.appendChild(scrImg);
+  const scrBadge = badgeEl(SCREEN.ax + SCREEN.aw - 4, SCREEN.ay + 4); svg.appendChild(scrBadge.g);
+  // selection ring for the key being painted (hover)
+  box.appendChild(svg);
+
+  const notes = document.createElement("textarea"); notes.className = "statenotes"; notes.placeholder = s.name + " notes…"; notes.value = s.notes;
+  notes.addEventListener("input", () => { s.notes = notes.value; }); box.appendChild(notes);
+  const annList = document.createElement("div"); annList.className = "annlist"; box.appendChild(annList);
+  statesEl.appendChild(box);
+  ui.push({ svg, keys, btns, encs, scrImg, scrBadge, notesEl: notes, annList });
+  attachHandlers(svg, si);
+}
+
+function rebuildStates() { statesEl.innerHTML = ""; ui = []; for (let si = 0; si < state.states.length; si++) buildStateBox(si); if (lastState >= state.states.length) lastState = 0; }
+
+function btnLabel(s, id) { return s.buttonLabels[id] || state.labels.buttons[id] || ""; }
+function encLabel(s, id) { return s.encoders[id].note || state.labels.encoders[id] || ""; }
+
+/* number annotated things in a stable order for badges + legend */
+function legendEntries(si) {
+  const s = state.states[si], out = [];
+  Object.keys(s.keyNotes).map(Number).sort((a, b) => a - b).forEach(idx => out.push({ kind: "key", idx, who: `${KEYS[idx].name} · key ${idx}`, text: s.keyNotes[idx] }));
+  BTN_IDS.forEach(id => { if (s.buttonNotes[id]) out.push({ kind: "btn", id, who: id + (btnLabel(s, id) ? ` (${btnLabel(s, id)})` : ""), text: s.buttonNotes[id] }); });
+  ENC_IDS.forEach(id => { const e = s.encoders[id]; if (e.note || e.value) out.push({ kind: "enc", id, who: id, text: (e.note || "") + (e.value ? (e.note ? " " : "") + `= ${e.value}` : "") }); });
+  if (s.screen && s.screen.note) out.push({ kind: "screen", who: "Screen", text: s.screen.note });
+  return out;
+}
+
+const screenCache = new Map();
+function screenCanvas(s, S) {
+  const key = JSON.stringify(s.screen) + "|" + state.palette + "|" + S;
+  if (screenCache.has(key)) return screenCache.get(key);
+  const cv = renderScreen(s.screen, state.palette, S);
+  if (screenCache.size > 64) screenCache.clear();
+  screenCache.set(key, cv); return cv;
+}
+
+function redrawState(si) {
+  const s = state.states[si], u = ui[si];
+  const keyText = document.getElementById("keyText").value, showStock = document.getElementById("chkStock").checked;
+  for (const k of KEYS) {
+    const lv = s.keys[k.i], e = u.keys[k.i], fill = ledFill(lv, "white");
+    e.led.setAttribute("fill", fill || "#1a1a1e");
+    e.led.setAttribute("stroke-dasharray", lv === 3 ? "3 2" : "none");
+    if (lv >= 2) { e.glow.setAttribute("display", ""); e.glow.setAttribute("fill", "rgba(244,244,255,0.16)"); } else e.glow.setAttribute("display", "none");
+    let txt = "";
+    if (keyText === "label") txt = s.keyLabels[k.i] || "";
+    else if (keyText === "note") txt = k.name; else if (keyText === "num") txt = String(k.i); else txt = k.stock;
+    if (keyText !== "label" && s.keyLabels[k.i]) txt = s.keyLabels[k.i];
+    e.label.textContent = txt;
+    e.label.setAttribute("fill", s.keyLabels[k.i] ? (lv >= 2 ? "#ffffff" : "#d8d8dc") : "#6e6e76");
+    e.label.setAttribute("font-size", txt.length > 4 ? 7.5 : 9.5);
+  }
+  for (const id of BTN_IDS) {
+    const b = BUTTONS[id], lv = s.buttons[id], e = u.btns[id], fill = ledFill(lv, b.led);
+    e.cap.setAttribute("fill", fill || "var(--cap)");
+    e.cap.setAttribute("stroke-dasharray", lv === 3 ? "3 2" : "none");
+    e.cap.setAttribute("stroke", lv === 3 ? "#fff" : "#0a0a0c");
+    const lab = btnLabel(s, id);
+    e.label.textContent = lab || id;
+    e.label.setAttribute("fill", lv >= 2 ? "#111114" : lab ? "#d8d8dc" : "#8a8a92");
+    e.label.setAttribute("font-size", (lab || id).length > 5 ? 7.5 : id.startsWith("OCT") ? 9 : 10);
+    e.stock.textContent = (lab && showStock && lab !== id) ? id : "";
+    e.stock.setAttribute("fill", lv >= 2 ? "#333" : "#6a6a72");
+    if (e.green) e.green.setAttribute("fill", s.playGreen ? "rgb(61,220,90)" : "#1a1a1e");
+  }
+  for (const id of ENC_IDS) {
+    const e = u.encs[id], d = s.encoders[id];
+    e.fn.textContent = truncate(encLabel(s, id), 16);
+    e.val.textContent = truncate(d.value || "", 12);
+  }
+  // screen
+  u.scrImg.setAttribute("href", screenCanvas(s, 2).toDataURL("image/png"));
+  // badges + legend
+  const entries = legendEntries(si);
+  const num = {};
+  entries.forEach((e, n) => { num[e.kind + (e.idx ?? e.id ?? "")] = n + 1; });
+  const setBadge = (b, n) => { if (n) { b.g.setAttribute("display", ""); b.t.textContent = n; } else b.g.setAttribute("display", "none"); };
+  for (const k of KEYS) setBadge(u.keys[k.i].badge, num["key" + k.i]);
+  for (const id of BTN_IDS) setBadge(u.btns[id].badge, num["btn" + id]);
+  for (const id of ENC_IDS) setBadge(u.encs[id].badge, num["enc" + id]);
+  setBadge(u.scrBadge, num["screen"]);
+  u.annList.innerHTML = "";
+  entries.forEach((e, n) => {
+    const item = document.createElement("div"); item.className = "annitem";
+    const badge = document.createElement("span"); badge.className = "badge"; badge.textContent = n + 1;
+    const who = document.createElement("b"); who.textContent = e.who;
+    const span = document.createElement("span"); span.textContent = e.text;
+    const del = document.createElement("button"); del.textContent = "×"; del.title = "remove note";
+    const open = () => e.kind === "key" ? openAnnAt(si, { type: "key", key: e.idx }) : e.kind === "btn" ? openAnnAt(si, { type: "btn", id: e.id }) : e.kind === "enc" ? openCtrlAt(si, e.id) : openScreenAt(si);
+    who.addEventListener("click", open); span.addEventListener("click", open);
+    del.addEventListener("click", () => clearEntry(si, e));
+    item.append(badge, who, span, del); u.annList.appendChild(item);
+  });
+}
+function truncate(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+function clearEntry(si, e) {
+  pushUndo(); const s = state.states[si];
+  if (e.kind === "key") delete s.keyNotes[e.idx];
+  else if (e.kind === "btn") delete s.buttonNotes[e.id];
+  else if (e.kind === "enc") s.encoders[e.id] = blankEnc();
+  else if (e.kind === "screen") s.screen.note = "";
+  redrawState(si);
+}
+function fullRedraw() {
+  document.getElementById("designName").value = state.name;
+  document.getElementById("globalNotes").value = state.notes;
+  document.getElementById("palSel").value = state.palette;
+  rebuildStates();
+  for (let si = 0; si < state.states.length; si++) redrawState(si);
+}
+function redrawAll() { for (let si = 0; si < state.states.length; si++) redrawState(si); }
+
+/* ---------- hit testing + painting ---------- */
+function hitAt(svg, clientX, clientY) {
+  const el = document.elementFromPoint(clientX, clientY);
+  if (!el || !svg.contains(el)) return null;
+  if (el.dataset) {
+    if (el.dataset.key != null) return { type: "key", key: Number(el.dataset.key) };
+    if (el.dataset.btn) return { type: "btn", id: el.dataset.btn };
+    if (el.dataset.enc) return { type: "enc", id: el.dataset.enc };
+    if (el.dataset.playg) return { type: "playg" };
+    if (el.dataset.screen) return { type: "screen" };
+  }
+  return null;
+}
+const tip = document.getElementById("tip");
+let tool = "paint";
+let stroke = null;   // { si, level, painted:Set }
+
+function setLevel(si, hit, level, painted) {
+  const s = state.states[si], key = hit.type + (hit.key ?? hit.id);
+  if (painted && painted.has(key)) return; if (painted) painted.add(key);
+  if (hit.type === "key") s.keys[hit.key] = level; else if (hit.type === "btn") s.buttons[hit.id] = level;
+}
+function attachHandlers(svg, si) {
+  svg.addEventListener("contextmenu", e => e.preventDefault());
+  svg.addEventListener("pointerdown", e => {
+    const hit = hitAt(svg, e.clientX, e.clientY);
+    lastState = si; e.preventDefault();
+    if (!hit) return;
+    const s = state.states[si];
+    if (hit.type === "screen") { if (e.button !== 2) openScreenAt(si, e.clientX, e.clientY); return; }
+    if (hit.type === "enc") { if (e.button !== 2) openCtrlAt(si, hit.id, e.clientX, e.clientY); return; }
+    if (hit.type === "playg") { pushUndo(); s.playGreen = s.playGreen ? 0 : 1; redrawState(si); return; }
+    if (tool === "label") { openAnnAt(si, hit, e.clientX, e.clientY); return; }
+    if (e.altKey) { curLevel = hit.type === "key" ? s.keys[hit.key] : s.buttons[hit.id]; renderPalette(); setStatus("picked " + LEVELS[curLevel]); return; }
+    try { svg.setPointerCapture(e.pointerId); } catch {}
+    pushUndo();
+    stroke = { si, level: e.button === 2 ? 0 : curLevel, painted: new Set(), lastX: e.clientX, lastY: e.clientY };
+    setLevel(si, hit, stroke.level, stroke.painted); redrawState(si);
+  });
+  svg.addEventListener("pointermove", e => {
+    const hit = hitAt(svg, e.clientX, e.clientY);
+    const s = state.states[si];
+    if (hit && hit.type === "key") { const k = KEYS[hit.key]; showTip(e, `${s.name} · ${k.name} · key ${k.i} · note ${k.midi} · ${LEVELS[s.keys[k.i]]}` + (s.keyLabels[k.i] ? ` · “${s.keyLabels[k.i]}”` : "") + (s.keyNotes[k.i] ? ` · ${s.keyNotes[k.i]}` : "")); }
+    else if (hit && hit.type === "btn") showTip(e, `${s.name} · ${hit.id}` + (btnLabel(s, hit.id) ? ` = ${btnLabel(s, hit.id)}` : "") + ` · ${LEVELS[s.buttons[hit.id]]}` + (s.buttonNotes[hit.id] ? ` · ${s.buttonNotes[hit.id]}` : ""));
+    else if (hit && hit.type === "enc") showTip(e, `${s.name} · ${hit.id}` + (encLabel(s, hit.id) ? ` = ${encLabel(s, hit.id)}` : "") + (s.encoders[hit.id].value ? ` (${s.encoders[hit.id].value})` : "") + " · click to edit");
+    else if (hit && hit.type === "screen") showTip(e, `${s.name} · screen 240×240 · ${(s.screen.palette || state.palette)} · click to edit`);
+    else if (hit && hit.type === "playg") showTip(e, "PLAY's green LED · click to toggle");
+    else tip.style.display = "none";
+    if (stroke && stroke.si === si) {
+      const steps = Math.max(1, Math.ceil(Math.hypot(e.clientX - stroke.lastX, e.clientY - stroke.lastY) / 4));
+      let changed = false;
+      for (let st = 1; st <= steps; st++) { const t = st / steps; const h = hitAt(svg, stroke.lastX + (e.clientX - stroke.lastX) * t, stroke.lastY + (e.clientY - stroke.lastY) * t);
+        if (h && (h.type === "key" || h.type === "btn")) { const before = stroke.painted.size; setLevel(si, h, stroke.level, stroke.painted); changed = changed || stroke.painted.size !== before; } }
+      stroke.lastX = e.clientX; stroke.lastY = e.clientY;
+      if (changed) redrawState(si);
+    }
+  });
+  svg.addEventListener("pointerleave", () => { tip.style.display = "none"; });
+  svg.addEventListener("pointerup", () => { stroke = null; });
+  svg.addEventListener("dblclick", e => {
+    const hit = hitAt(svg, e.clientX, e.clientY);
+    if (hit && (hit.type === "key" || hit.type === "btn")) openAnnAt(si, hit, e.clientX, e.clientY);
+  });
+}
+function showTip(e, text) { tip.textContent = text; tip.style.display = "block"; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 16) + "px"; }
+
+/* ---------- LED level palette ---------- */
+const paletteEl = document.getElementById("palette");
+function renderPalette() {
+  paletteEl.innerHTML = "";
+  LEVELS.forEach((name, i) => {
+    const d = document.createElement("div"); d.className = `swatch sw${i}` + (curLevel === i ? " sel" : ""); d.textContent = name;
+    d.title = ["LED off", "dim: the idle glow (fm1_led_dim)", "lit (fm1_led)", "blinking (lit / dark at 2 Hz)"][i];
+    d.addEventListener("click", () => { curLevel = i; renderPalette(); }); paletteEl.appendChild(d);
+  });
+}
+function setTool(t) {
+  tool = t;
+  document.getElementById("toolPaint").classList.toggle("sel", t === "paint");
+  document.getElementById("toolLabel").classList.toggle("sel", t === "label");
+  setStatus(t === "paint" ? "paint: drag over keys and buttons to set the LED level" : "label: click a key, button or knob to edit its label and note");
+}
+document.getElementById("toolPaint").addEventListener("click", () => setTool("paint"));
+document.getElementById("toolLabel").addEventListener("click", () => setTool("label"));
+
+/* ---------- key / button editor ---------- */
+const annEdit = document.getElementById("annEdit"), annText = document.getElementById("annText"), annLabel = document.getElementById("annLabel");
+let annTarget = null;
+function openAnnAt(si, hit, cxp, cyp) {
+  annTarget = { si, hit };
+  const s = state.states[si];
+  let who, lab, note, ax, ay;
+  if (hit.type === "key") { const k = KEYS[hit.key]; who = `${s.name} · ${k.name} · key ${k.i} · note ${k.midi}` + (k.stock ? ` · printed ${k.stock}` : ""); lab = s.keyLabels[hit.key] || ""; note = s.keyNotes[hit.key] || ""; ax = k.cx; ay = k.cy; }
+  else { const b = BUTTONS[hit.id]; who = `${s.name} · button ${hit.id}` + (state.labels.buttons[hit.id] ? ` · design label ${state.labels.buttons[hit.id]}` : ""); lab = s.buttonLabels[hit.id] || ""; note = s.buttonNotes[hit.id] || ""; ax = b.cx; ay = b.cy; }
+  document.getElementById("annWho").textContent = who;
+  annLabel.value = lab; annText.value = note;
+  annLabel.placeholder = hit.type === "btn" && state.labels.buttons[hit.id] ? `design-wide: ${state.labels.buttons[hit.id]}` : "e.g. DIM · C · UNDO";
+  positionPop(annEdit, si, cxp, cyp, ax, ay);
+  annLabel.focus(); annLabel.select();
+}
+function closeAnn() { annEdit.style.display = "none"; annTarget = null; }
+function saveAnn() {
+  if (!annTarget) return; pushUndo();
+  const { si, hit } = annTarget, s = state.states[si], lab = annLabel.value.trim(), note = annText.value.trim();
+  if (hit.type === "key") { if (lab) s.keyLabels[hit.key] = lab; else delete s.keyLabels[hit.key]; if (note) s.keyNotes[hit.key] = note; else delete s.keyNotes[hit.key]; }
+  else { if (lab) s.buttonLabels[hit.id] = lab; else delete s.buttonLabels[hit.id]; if (note) s.buttonNotes[hit.id] = note; else delete s.buttonNotes[hit.id]; }
+  redrawState(si); closeAnn();
+}
+document.getElementById("annSave").addEventListener("click", saveAnn);
+document.getElementById("annDel").addEventListener("click", () => { if (!annTarget) return; annLabel.value = ""; annText.value = ""; saveAnn(); });
+document.getElementById("annCancel").addEventListener("click", closeAnn);
+annEdit.addEventListener("keydown", e => { if (e.key === "Enter") saveAnn(); if (e.key === "Escape") closeAnn(); });
+
+/* ---------- encoder editor ---------- */
+const ctrlEdit = document.getElementById("ctrlEdit");
+let ctrlTarget = null;
+function openCtrlAt(si, id, cxp, cyp) {
+  ctrlTarget = { si, id }; const s = state.states[si], e = ENCODERS[id];
+  document.getElementById("ctrlWho").textContent = `${s.name} · ${id}` + (e.pot ? " (potentiometer)" : " (endless encoder, no push)") + (state.labels.encoders[id] ? ` · design label ${state.labels.encoders[id]}` : "");
+  document.getElementById("cf_note").value = s.encoders[id].note; document.getElementById("cf_value").value = s.encoders[id].value;
+  document.getElementById("cf_note").placeholder = state.labels.encoders[id] ? `design-wide: ${state.labels.encoders[id]}` : "e.g. chord voicing";
+  positionPop(ctrlEdit, si, cxp, cyp, e.cx, e.cy);
+  document.getElementById("cf_note").focus();
+}
+function closeCtrl() { ctrlEdit.style.display = "none"; ctrlTarget = null; }
+function saveCtrl() { if (!ctrlTarget) return; pushUndo(); const { si, id } = ctrlTarget; state.states[si].encoders[id] = { note: val("cf_note"), value: val("cf_value") }; redrawState(si); closeCtrl(); }
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+document.getElementById("ctrlSave").addEventListener("click", saveCtrl);
+document.getElementById("ctrlClear").addEventListener("click", () => { if (!ctrlTarget) return; pushUndo(); state.states[ctrlTarget.si].encoders[ctrlTarget.id] = blankEnc(); redrawState(ctrlTarget.si); closeCtrl(); });
+document.getElementById("ctrlCancel").addEventListener("click", closeCtrl);
+ctrlEdit.addEventListener("keydown", e => { if (e.key === "Enter") saveCtrl(); if (e.key === "Escape") closeCtrl(); });
+
+/* ---------- screen editor ---------- */
+const PANEL_TEMPLATES = {
+  chord:    { kind: "chord", root: "C", quality: "m", sup: "7", notes: "C4 D#4 G4 A#4", key: "", trans: "" },
+  keyboard: { kind: "keyboard", root: "C", quality: "", sup: "M7", notes: "", lit: ["C4","E4","G4","B4"], key: "" },
+  notes:    { kind: "notes", root: "C", quality: "", sup: "M7 9", notes: "E3 G3 B3 D4 C4", key: "KEY C" },
+  geek:     { kind: "geek", root: "C", quality: "m", sup: "7", notes: ["C4","D#4","G4","A#4"], lit: ["C4","D#4","G4","A#4"], key: "KEY C MIN", trans: "TRANS +0", lines: ["VOICING +1 · BASS C2", "STRUM 40 ms · UP · 1 OCT"] },
+  tiles:    { kind: "tiles", title: "KEY", subtitle: "hold · press a key: the tonic", cols: 4, rows: 4, cells: [{ t: "C", on: true }, { t: "C#", dim: true }, { t: "D" }, { t: "D#", dim: true }, { t: "E" }, { t: "F" }, { t: "F#", dim: true }, { t: "G" }, { t: "G#", dim: true }, { t: "A" }, { t: "A#", dim: true }, { t: "B" }, { t: "MAJ", acc: true }, { t: "MIN" }, null, null] },
+  list:     { kind: "list", title: "OPTIONS", items: [{ t: "Play style", v: "SIMPLE" }, { t: "Extension add", v: "NOTE" }, { t: "Bass", v: "CHORDS" }, { t: "Secret chords", v: "OFF" }, { t: "MIDI channels", v: "1·2·3" }, { t: "Velocity", v: "100" }, { t: "View", v: "CHORD" }, { t: "Version", v: "0.1" }], sel: 0 },
+  big:      { kind: "big", value: "120", label: "BPM" },
+  scope:    { kind: "scope", root: "C", quality: "", sup: "", amp: 0.6, freq: 3 },
+  text:     { kind: "text", title: "", lines: ["a line of text", { t: "a THEME line", col: "theme" }, { t: "centred", center: true }] },
+  loop:     { kind: "loop", value: "4", label: "BARS", pct: 0.35, rec: false, layers: 1, status: "PLAYING", title: "LOOP 1", right: "FREE" },
+  splash:   { kind: "splash", bands: ["coral", "orange", "cream", "teal", "blue"], width: 64, phase: 0, title: "choralroot" },
+  dial:     { kind: "dial", value: "05", sub: "", label: "Reverb", col: "coral", pct: 0.25 },
+  picker:   { kind: "picker", items: ["Strum", "Strum 2 Octaves", "Slop", { t: "Arpeggiate", v: "1/8" }, "Arp 2 Octaves", "Pattern", "Harp"], sel: 3, label: "perform", col: "white" },
+  meter:    { kind: "meter", value: "05", label: "reverb", col: "green", pct: 0.4, segments: 12 },
+  roundel:  { kind: "roundel", rings: ["blue", "white", "red"], title: "choralroot" },
+  stripes:  { kind: "stripes", bands: ["red", "white", "blue"], band: 16, gap: 8, phase: 0, title: "choralroot" },
+  params:   { kind: "params", title: "Envelope", page: "ENV 1/1", cols: [{ label: "Attack", value: "0.20", glyph: "env", env: [0.2, 0.3, 0.6, 0.3] }, { label: "Decay", value: "0.30", glyph: "knob", pct: 0.3 }, { label: "Sustain", value: "60", glyph: "bar", pct: 0.6 }, { label: "Release", value: "0.30", glyph: "knob", pct: 0.3 }] },
+  arp:      { kind: "arp", root: "A", quality: "m", sup: "7", notes: [{ t: "A4", col: "cream" }, { t: "C5", col: "cream" }, { t: "E5", col: "cream" }, { t: "G5", col: "orange" }], pos: 2, line: "Arp 1/8" },
+};
+const scrEdit = document.getElementById("scrEdit"), scrJson = document.getElementById("scrJson"), scrErr = document.getElementById("scrErr");
+let scrTarget = null;
+{ const ps = document.getElementById("scrPal"); const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "(design)"; ps.appendChild(o0);
+  for (const n of PAL_NAMES) { const o = document.createElement("option"); o.value = n; o.textContent = n; ps.appendChild(o); }
+  const ks = document.getElementById("scrKind"); for (const n of Object.keys(PANEL_TEMPLATES)) { const o = document.createElement("option"); o.value = n; o.textContent = n; ks.appendChild(o); } }
+function openScreenAt(si, cxp, cyp) {
+  scrTarget = { si }; const s = state.states[si];
+  document.getElementById("scrWho").textContent = `${s.name} · screen (240×240, Felucca layout: header 0–24 · cards 28–72 · panel 76–198 · footer 202–240)`;
+  document.getElementById("scrPal").value = s.screen.palette || "";
+  document.getElementById("scrKind").value = (s.screen.panel && s.screen.panel.kind) || "chord";
+  document.getElementById("scrNote").value = s.screen.note || "";
+  const { note, palette: _p, ...rest } = s.screen;
+  scrJson.value = JSON.stringify(rest, null, 2); scrErr.textContent = "";
+  positionPop(scrEdit, si, cxp, cyp, SCREEN.x + SCREEN.w / 2, SCREEN.y + SCREEN.h / 2);
+}
+function closeScreen() { scrEdit.style.display = "none"; scrTarget = null; }
+function saveScreen() {
+  if (!scrTarget) return;
+  try {
+    const obj = JSON.parse(scrJson.value);
+    pushUndo();
+    const s = state.states[scrTarget.si];
+    obj.palette = document.getElementById("scrPal").value || null;
+    obj.note = document.getElementById("scrNote").value.trim();
+    s.screen = normScreen(obj);
+    redrawState(scrTarget.si); closeScreen();
+  } catch (err) { scrErr.textContent = "invalid JSON: " + err.message; }
+}
+document.getElementById("scrSave").addEventListener("click", saveScreen);
+document.getElementById("scrCancel").addEventListener("click", closeScreen);
+document.getElementById("scrTpl").addEventListener("click", () => {
+  try { const obj = JSON.parse(scrJson.value || "{}"); obj.panel = JSON.parse(JSON.stringify(PANEL_TEMPLATES[document.getElementById("scrKind").value])); scrJson.value = JSON.stringify(obj, null, 2); scrErr.textContent = ""; }
+  catch (err) { scrErr.textContent = "fix the JSON first: " + err.message; }
+});
+scrEdit.addEventListener("keydown", e => { if (e.key === "Escape") closeScreen(); if ((e.metaKey || e.ctrlKey) && e.key === "Enter") saveScreen(); });
+
+function positionPop(pop, si, cxp, cyp, unitX, unitY) {
+  pop.style.display = "block";
+  let px = cxp, py = cyp;
+  if (px == null) { const r = ui[si].svg.getBoundingClientRect(); px = r.left + unitX * (r.width / DEV_W); py = r.top + unitY * (r.height / DEV_H); }
+  const w = pop.offsetWidth || 320, h = pop.offsetHeight || 140;
+  pop.style.left = Math.max(6, Math.min(px + 10, window.innerWidth - w - 6)) + "px";
+  pop.style.top = Math.max(6, Math.min(py + 10, window.innerHeight - h - 6)) + "px";
+}
+
+/* ---------- state management ---------- */
+let stateClipboard = null;
+function stateAdd() { if (state.states.length >= MAX_STATES) { setStatus(`max ${MAX_STATES} states`); return; } pushUndo(); const s = blankState(state.states.length); if (state.states.length) { const prev = state.states[state.states.length - 1]; s.buttonLabels = { ...prev.buttonLabels }; s.encoders = JSON.parse(JSON.stringify(prev.encoders)); } state.states.push(s); fullRedraw(); setStatus("added " + s.name); window.scrollTo(0, document.body.scrollHeight); }
+function stateDup(si) { if (state.states.length >= MAX_STATES) { setStatus(`max ${MAX_STATES} states`); return; } pushUndo(); const copy = JSON.parse(JSON.stringify(state.states[si])); copy.name += " copy"; state.states.splice(si + 1, 0, copy); fullRedraw(); setStatus("duplicated"); }
+function stateRemove(si) { if (state.states.length <= 1) { setStatus("can't remove the last state"); return; } pushUndo(); const n = state.states[si].name; state.states.splice(si, 1); fullRedraw(); setStatus(`removed ${n} (⌘Z to undo)`); }
+function stateMove(si, d) { const j = si + d; if (j < 0 || j >= state.states.length) return; pushUndo(); const [s] = state.states.splice(si, 1); state.states.splice(j, 0, s); fullRedraw(); }
+function stateCopy(si) { stateClipboard = JSON.parse(JSON.stringify(state.states[si])); setStatus(`copied ${state.states[si].name}`); }
+function statePaste(si) { if (!stateClipboard) { setStatus("no state copied yet"); return; } pushUndo(); const name = state.states[si].name; state.states[si] = JSON.parse(JSON.stringify(stateClipboard)); state.states[si].name = name; fullRedraw(); setStatus(`pasted into ${name}`); }
+function stateClear(si) { pushUndo(); const s = state.states[si]; s.keys.fill(0); for (const id of BTN_IDS) s.buttons[id] = 0; s.playGreen = 0; redrawState(si); }
+function stateGlow(si) { pushUndo(); const s = state.states[si]; s.keys.fill(1); for (const id of BTN_IDS) s.buttons[id] = 1; redrawState(si); setStatus("idle glow: every LED dim"); }
+document.getElementById("btnAddState").addEventListener("click", stateAdd);
+
+/* ---------- top bar ---------- */
+{ const ps = document.getElementById("palSel"); for (const n of PAL_NAMES) { const o = document.createElement("option"); o.value = n; o.textContent = n; ps.appendChild(o); }
+  ps.addEventListener("change", () => { state.palette = ps.value; redrawAll(); }); }
+document.getElementById("designName").addEventListener("input", e => { state.name = e.target.value; });
+document.getElementById("globalNotes").addEventListener("input", e => { state.notes = e.target.value; });
+document.getElementById("keyText").addEventListener("change", redrawAll);
+document.getElementById("chkStock").addEventListener("change", redrawAll);
+document.getElementById("btnNew").addEventListener("click", () => { if (!confirm("start a new blank design? (unsaved changes are lost)")) return; pushUndo(); state = blankDesign(); fullRedraw(); });
+document.getElementById("btnSave").addEventListener("click", () => {
+  const json = JSON.stringify(toJSON(), null, 2); const blob = new Blob([json], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = safeName() + ".json"; a.click(); URL.revokeObjectURL(a.href); setStatus("saved " + a.download);
+});
+document.getElementById("btnCopy").addEventListener("click", async () => {
+  const json = JSON.stringify(toJSON(), null, 2);
+  try { await navigator.clipboard.writeText(json); setStatus("JSON copied — paste it to Claude"); }
+  catch { const ta = document.createElement("textarea"); ta.value = json; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); setStatus("JSON copied — paste it to Claude"); }
+});
+function safeName() { return (state.name || "design").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "design"; }
+
+/* ---------- load ---------- */
+const loadModal = document.getElementById("loadModal"), loadErr = document.getElementById("loadErr");
+document.getElementById("btnLoad").addEventListener("click", () => { loadErr.textContent = ""; document.getElementById("loadText").value = ""; document.getElementById("loadFile").value = ""; loadModal.style.display = "flex"; });
+document.getElementById("loadCancel").addEventListener("click", () => { loadModal.style.display = "none"; });
+document.getElementById("loadFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) f.text().then(t => { document.getElementById("loadText").value = t; }); });
+document.getElementById("loadDo").addEventListener("click", () => {
+  const txt = document.getElementById("loadText").value.trim(); if (!txt) { loadErr.textContent = "nothing to load"; return; }
+  try { const d = fromJSON(JSON.parse(txt)); pushUndo(); state = d; fullRedraw(); loadModal.style.display = "none"; setStatus("loaded “" + state.name + "”"); }
+  catch (err) { loadErr.textContent = "could not load: " + err.message; }
+});
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+  f.text().then(t => { try { const d = fromJSON(JSON.parse(t)); pushUndo(); state = d; fullRedraw(); setStatus("loaded " + f.name); } catch (err) { setStatus("could not load " + f.name + ": " + err.message); } }); });
+
+/* ---------- PNG export ---------- */
+document.getElementById("btnPng").addEventListener("click", () => exportPNG("plate"));
+document.getElementById("btnScreens").addEventListener("click", () => exportPNG("screens"));
+function wrapText(ctx, text, maxW) {
+  const lines = [];
+  for (const para of String(text).split("\n")) { if (!para.trim()) continue; let line = "";
+    for (const word of para.split(/\s+/)) { const test = line ? line + " " + word : word; if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = word; } else line = test; }
+    if (line) lines.push(line); }
+  return lines;
+}
+function rrc(ctx, x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+
+function exportPNG(mode, deliver) {
+  const exported = state.states.map((s, i) => ({ s, i })).filter(o => o.s.export);
+  if (!exported.length) { setStatus("no states ticked for export — tick a state's png checkbox first"); return; }
+  const cv = mode === "screens" ? renderScreensSheet(exported) : renderPlatesSheet(exported);
+  const name = safeName() + (mode === "screens" ? "-screens" : "") + ".png";
+  cv.toBlob(blob => {
+    if (deliver) { deliver(blob, name); return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+    setStatus(`exported ${name} (${exported.length} state${exported.length > 1 ? "s" : ""})`);
+  }, "image/png");
+}
+
+function renderScreensSheet(exported) {
+  const S = 2, SW = 240 * S, GAP = 28, COLS = Math.min(4, exported.length), NAME_H = 30;
+  const ROWS = Math.ceil(exported.length / COLS);
+  const W = GAP + COLS * (SW + GAP), H = GAP + 36 + ROWS * (SW + NAME_H + GAP);
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#16161a"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#d8d8dc"; ctx.font = "600 22px -apple-system, 'Helvetica Neue', Arial, sans-serif"; ctx.fillText(state.name || "untitled", GAP, GAP + 10);
+  ctx.fillStyle = "#8a8a92"; ctx.font = "14px -apple-system, 'Helvetica Neue', Arial, sans-serif"; ctx.textAlign = "right"; ctx.fillText("FM-1 · 240×240 screens", W - GAP, GAP + 10); ctx.textAlign = "start";
+  exported.forEach(({ s }, n) => {
+    const x = GAP + (n % COLS) * (SW + GAP), y = GAP + 36 + Math.floor(n / COLS) * (SW + NAME_H + GAP);
+    const sc = screenCanvas(s, S * 2);
+    ctx.save(); rrc(ctx, x, y, SW, SW, 10); ctx.clip(); ctx.drawImage(sc, x, y, SW, SW); ctx.restore();
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 2; rrc(ctx, x, y, SW, SW, 10); ctx.stroke();
+    ctx.fillStyle = "#d8d8dc"; ctx.font = "600 14px -apple-system, 'Helvetica Neue', Arial, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(s.name, x + SW / 2, y + SW + 20); ctx.textAlign = "start";
+  });
+  return cv;
+}
+
+function renderPlatesSheet(exported) {
+  const S = 1.5, K = 1.35;   // K: drawing units -> export px
+  const PLATE_W = DEV_W * K, PLATE_H = DEV_H * K;
+  const MARGIN = 26, HEADER = 56, LINE_H = 18, NAME_H = 26, GAP = 20;
+  const W = MARGIN * 2 + PLATE_W;
+  const meas = document.createElement("canvas").getContext("2d");
+  const FONT = "13px -apple-system, 'Helvetica Neue', Arial, sans-serif", FONT_IT = "italic " + FONT;
+  const blocks = exported.map(({ s, i }) => {
+    const entries = legendEntries(i), rows = [];
+    meas.font = FONT;
+    entries.forEach((e, n) => { wrapText(meas, `${e.who}: ${e.text}`, W - MARGIN * 2 - 46).forEach((t, j) => rows.push({ badge: j === 0 ? n + 1 : null, italic: false, text: t })); });
+    if (s.notes.trim()) { meas.font = FONT_IT; for (const t of wrapText(meas, s.notes, W - MARGIN * 2 - 24)) rows.push({ badge: null, italic: true, text: t }); }
+    return { s, i, entries, rows };
+  });
+  meas.font = FONT;
+  const globalLines = state.notes.trim() ? wrapText(meas, state.notes, W - MARGIN * 2 - 20) : [];
+  const blockH = b => PLATE_H + NAME_H + (b.rows.length ? b.rows.length * LINE_H + 10 : 0);
+  const globalH = globalLines.length ? globalLines.length * LINE_H + 34 : 0;
+  const H = HEADER + blocks.reduce((a, b) => a + blockH(b), 0) + GAP * (blocks.length - 1) + globalH + MARGIN;
+  const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
+  const ctx = cv.getContext("2d"); ctx.scale(S, S);
+  ctx.fillStyle = "#16161a"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#d8d8dc"; ctx.font = "600 21px -apple-system, 'Helvetica Neue', Arial, sans-serif"; ctx.fillText(state.name || "untitled", MARGIN, 36);
+  ctx.fillStyle = "#8a8a92"; ctx.font = "14px -apple-system, 'Helvetica Neue', Arial, sans-serif"; ctx.textAlign = "right"; ctx.fillText("M-VAVE FM-1 · ChoralRoot", W - MARGIN, 36); ctx.textAlign = "start";
+  let py = HEADER;
+  for (const b of blocks) {
+    drawPlate(ctx, MARGIN, py, K, b.s, b.entries);
+    ctx.fillStyle = "#8a8a92"; ctx.font = "600 14px -apple-system, 'Helvetica Neue', Arial, sans-serif"; ctx.textAlign = "center"; ctx.fillText(b.s.name, MARGIN + PLATE_W / 2, py + PLATE_H + 19); ctx.textAlign = "start";
+    let ly = py + PLATE_H + NAME_H + 12;
+    for (const row of b.rows) {
+      let tx = MARGIN + 8;
+      if (row.badge != null) { ctx.fillStyle = "#54d678"; ctx.beginPath(); ctx.arc(tx + 8, ly - 4, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#10201a"; ctx.font = "700 10.5px -apple-system, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(row.badge), tx + 8, ly - 3.5); ctx.textAlign = "start"; ctx.textBaseline = "alphabetic"; }
+      if (row.badge != null || !row.italic) tx += 22;
+      ctx.fillStyle = row.italic ? "#8a8a92" : "#d8d8dc"; ctx.font = row.italic ? FONT_IT : FONT; ctx.fillText(row.text, tx, ly); ly += LINE_H;
+    }
+    py += blockH(b) + GAP;
+  }
+  if (globalLines.length) { const gy = py - GAP + 6; ctx.strokeStyle = "#34343c"; ctx.beginPath(); ctx.moveTo(MARGIN, gy); ctx.lineTo(W - MARGIN, gy); ctx.stroke(); ctx.fillStyle = "#8a8a92"; ctx.font = FONT_IT; let gly = gy + 22; for (const t of globalLines) { ctx.fillText(t, MARGIN + 10, gly); gly += LINE_H; } }
+  return cv;
+}
+
+function drawPlate(ctx, ox, oy, K, s, entries) {
+  const num = {}; entries.forEach((e, n) => { num[e.kind + (e.idx ?? e.id ?? "")] = n + 1; });
+  const X = u => ox + u * K, Y = u => oy + u * K;
+  const keyText = document.getElementById("keyText").value, showStock = document.getElementById("chkStock").checked;
+  const SANS = "-apple-system, 'Helvetica Neue', Arial, sans-serif";
+  ctx.fillStyle = "#1c1c20"; rrc(ctx, X(BODY.x), Y(BODY.y), BODY.w * K, BODY.h * K, BODY.r * K); ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = "#141417"; rrc(ctx, X(52), Y(306), 800 * K, 198 * K, 20 * K); ctx.fill();
+  rrc(ctx, X(BTN_FRAME.x), Y(BTN_FRAME.y), BTN_FRAME.w * K, BTN_FRAME.h * K, BTN_FRAME.r * K); ctx.fill();
+  rrc(ctx, X(OCT_FRAME.x), Y(OCT_FRAME.y), OCT_FRAME.w * K, OCT_FRAME.h * K, OCT_FRAME.r * K); ctx.fill();
+  function badge(ux, uy, key) { const n = num[key]; if (!n) return; const bx = X(ux), by = Y(uy); ctx.fillStyle = "#54d678"; ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#10201a"; ctx.font = "700 10px " + SANS; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(n), bx, by + 0.5); ctx.textAlign = "start"; ctx.textBaseline = "alphabetic"; }
+  // keys
+  for (const k of KEYS) {
+    const lv = s.keys[k.i], fill = ledFill(lv, "white");
+    ctx.fillStyle = "#2b2b31"; rrc(ctx, X(k.x), Y(k.y), k.w * K, k.h * K, 21 * K); ctx.fill(); ctx.strokeStyle = "#0a0a0c"; ctx.lineWidth = 1; ctx.stroke();
+    if (lv >= 2) { ctx.fillStyle = "rgba(244,244,255,0.16)"; rrc(ctx, X(k.cx - 9), Y(k.y + 9), 18 * K, 40 * K, 9 * K); ctx.fill(); }
+    ctx.fillStyle = fill || "#1a1a1e"; rrc(ctx, X(k.cx - 4), Y(k.y + 14), 8 * K, 30 * K, 4 * K); ctx.fill();
+    if (lv === 3) { ctx.setLineDash([3, 2]); ctx.strokeStyle = "#fff"; ctx.stroke(); ctx.setLineDash([]); }
+    let txt = keyText === "label" ? (s.keyLabels[k.i] || "") : keyText === "note" ? k.name : keyText === "num" ? String(k.i) : k.stock;
+    if (keyText !== "label" && s.keyLabels[k.i]) txt = s.keyLabels[k.i];
+    if (txt) { ctx.fillStyle = s.keyLabels[k.i] ? (lv >= 2 ? "#fff" : "#d8d8dc") : "#6e6e76"; ctx.font = `600 ${(txt.length > 4 ? 7.5 : 9.5) * K}px ${SANS}`; ctx.textAlign = "center"; ctx.fillText(txt, X(k.cx), Y(k.y + 62)); ctx.textAlign = "start"; }
+    badge(k.x + k.w - 3, k.y + 3, "key" + k.i);
+  }
+  // buttons
+  for (const id of BTN_IDS) {
+    const b = BUTTONS[id], lv = s.buttons[id], fill = ledFill(lv, b.led), lab = btnLabel(s, id);
+    ctx.fillStyle = fill || "#2b2b31"; rrc(ctx, X(b.x), Y(b.y), b.w * K, b.h * K, (id.startsWith("OCT") ? 6 : 5) * K); ctx.fill();
+    ctx.strokeStyle = lv === 3 ? "#fff" : "#0a0a0c"; ctx.lineWidth = 1; if (lv === 3) ctx.setLineDash([3, 2]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = lv >= 2 ? "#111114" : lab ? "#d8d8dc" : "#8a8a92"; ctx.font = `700 ${((lab || id).length > 5 ? 7.5 : id.startsWith("OCT") ? 9 : 10) * K}px ${SANS}`; ctx.textAlign = "center";
+    ctx.fillText(lab || id, X(b.cx), Y(b.cy + 3.5));
+    if (lab && showStock && lab !== id) { ctx.fillStyle = lv >= 2 ? "#333" : "#6a6a72"; ctx.font = `${6.5 * K}px ${SANS}`; ctx.fillText(id, X(b.cx), Y(b.y + b.h - 3)); }
+    ctx.textAlign = "start";
+    if (id === "PLAY") { ctx.fillStyle = s.playGreen ? "rgb(61,220,90)" : "#1a1a1e"; ctx.beginPath(); ctx.arc(X(b.x + 6), Y(b.y + b.h - 6), 3.2 * K, 0, Math.PI * 2); ctx.fill(); }
+    badge(b.x + b.w - 2, b.y + 2, "btn" + id);
+  }
+  // encoders
+  for (const id of ENC_IDS) {
+    const e = ENCODERS[id];
+    ctx.fillStyle = "#26262c"; ctx.beginPath(); ctx.arc(X(e.cx), Y(e.cy), ENC_R * K, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#0a0a0c"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = "#3a3a42"; ctx.lineWidth = 2.5 * K; ctx.setLineDash([2 * K, 2.2 * K]); ctx.beginPath(); ctx.arc(X(e.cx), Y(e.cy), (ENC_R - 3) * K, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#35353c"; ctx.beginPath(); ctx.arc(X(e.cx), Y(e.cy), ENC_CAP * K, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = e.pot ? "#fff" : "#c8c8d0"; ctx.lineWidth = 2 * K; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(X(e.cx), Y(e.cy - 4)); ctx.lineTo(X(e.cx), Y(e.cy - ENC_CAP + 1)); ctx.stroke();
+    ctx.fillStyle = "#8a8a92"; ctx.font = `${9 * K}px ui-monospace, Menlo, monospace`; ctx.textAlign = "center"; ctx.fillText(id, X(e.cx), Y(e.labelY));
+    const fn = encLabel(s, id), v = s.encoders[id].value;
+    if (fn) { ctx.fillStyle = "#d8d8dc"; ctx.font = `600 ${9.5 * K}px ${SANS}`; ctx.fillText(truncate(fn, 16), X(e.cx), Y(e.cy + ENC_R + 12)); }
+    if (v) { ctx.fillStyle = "#54d678"; ctx.font = `${9.5 * K}px ui-monospace, Menlo, monospace`; ctx.fillText(truncate(v, 12), X(e.cx), Y(e.cy + ENC_R + 24)); }
+    ctx.textAlign = "start";
+    badge(e.cx + ENC_R - 4, e.cy - ENC_R + 4, "enc" + id);
+  }
+  // screen
+  ctx.fillStyle = "#0b0b0e"; rrc(ctx, X(SCREEN.x), Y(SCREEN.y), SCREEN.w * K, SCREEN.h * K, 10 * K); ctx.fill(); ctx.strokeStyle = "#000"; ctx.stroke();
+  ctx.drawImage(screenCanvas(s, 3), X(SCREEN.ax), Y(SCREEN.ay), SCREEN.aw * K, SCREEN.ah * K);
+  badge(SCREEN.ax + SCREEN.aw - 4, SCREEN.ay + 4, "screen");
+}
+
+/* ---------- keyboard ---------- */
+document.addEventListener("keydown", e => {
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); return; }
+  if (e.key === "Escape") { if (annEdit.style.display === "block") return closeAnn(); if (ctrlEdit.style.display === "block") return closeCtrl(); if (scrEdit.style.display === "block") return closeScreen(); }
+  if (e.key.toLowerCase() === "p") setTool("paint");
+  if (e.key.toLowerCase() === "l") setTool("label");
+  if (/^[0-3]$/.test(e.key)) { curLevel = Number(e.key); renderPalette(); }
+});
+
+/* ---------- automation: ?design=URL loads a file; &export=plate|screens&post=URL renders and POSTs the png ---------- */
+async function autoload() {
+  const q = new URLSearchParams(location.search);
+  const src = q.get("design");
+  if (src) {
+    try { const r = await fetch(src); const d = fromJSON(await r.json()); state = d; fullRedraw(); setStatus("loaded " + src); }
+    catch (err) { setStatus("could not load " + src + ": " + err.message); return; }
+  }
+  const ex = q.get("export");
+  if (ex && q.get("post")) {
+    await (document.fonts ? document.fonts.ready : Promise.resolve());
+    screenCache.clear(); redrawAll();
+    exportPNG(ex === "screens" ? "screens" : "plate", async (blob, name) => {
+      const r = await fetch(q.get("post") + (q.get("post").includes("?") ? "&" : "?") + "name=" + encodeURIComponent(q.get("name") || name), { method: "POST", body: blob });
+      setStatus("posted " + name + ": " + r.status); document.title = "exported " + name;
+    });
+  }
+}
+
+/* ---------- init ---------- */
+renderPalette();
+fullRedraw();
+autoload();
+if (document.fonts) document.fonts.ready.then(() => { screenCache.clear(); redrawAll(); });
+</script>
+</body>
+</html>
