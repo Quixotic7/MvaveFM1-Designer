@@ -8,7 +8,9 @@ for sharing them with humans and LLMs. A sibling of the
 its encoders and its colour screen. Built to design the ChoralRoot FM-1 firmware (an Orchid-style
 chord instrument on Felucca's engines), useful for any FM-1 firmware.
 
-No build, no dependencies — `index.html` is the whole app. Open it in a browser.
+No build, no dependencies — `index.html` is the whole app. Open it in a browser, or use it online at
+**<https://quixotic7.github.io/MvaveFM1-Designer/>** (GitHub Pages from this repo:
+<https://github.com/Quixotic7/MvaveFM1-Designer>).
 
 ![example export: the ChoralRoot screens](docs/choralroot-fm1-screens.png)
 
