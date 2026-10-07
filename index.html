@@ -614,9 +614,9 @@ function renderScreen(scr, palName, S) {
     for (let i = 0; i <= n; i++) { const u = i / n * cycles, t = i === n ? 1 - 1e-9 : u - Math.floor(u), xx = x + w * i / n, yy = cy - f(t, i) * amp; i ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); }
     ctx.stroke(); ctx.lineJoin = "miter"; ctx.lineCap = "butt";
   }
-  function drawKeyboard(y, h, lit, labels) {
-    // 16 white keys across 224 px, black keys 9 px wide in their true slots
-    const ww = 224 / 16, x0 = 8, bw = 8, bh = h * 0.6;
+  function drawKeyboard(y, h, lit, labels, x0 = 8, W = 224) {
+    // 16 white keys across W px (224 by default) from x0, black keys 8/14 of a white key wide in their true slots
+    const ww = W / 16, bw = ww * 8 / 14, bh = h * 0.6;
     const litCol = new Map();
     (lit || []).forEach(v => { const o = typeof v === "object" && v ? v : { k: v }; const i = resolveKey(o.k); if (i != null) litCol.set(i, colOf(P, o.col, null)); });
     const litSet = new Set(litCol.keys());
@@ -919,18 +919,20 @@ function renderScreen(scr, palName, S) {
     // (label 10, a 48 x 36 glyph box, value 13 bold, the 2 px bar)
     const cellRow = (row, y, s, on, hotCi, big, o) => {
       o = o || {};
-      const T = !!o.tall, h = (T ? 72 : big ? 100 : 56) * s, lpx = big ? 12 : 10, vpx = big ? 17 : 13, gh = (T ? 36 : big ? 34 : 22) * s;
-      const ly = y + (big ? 16 : 11) * s, gy = y + (big ? 26 : 15) * s, vy = y + (T ? 66 : big ? 82 : 51) * s, gw = T ? 48 : 50;
+      const T = !!o.tall, RG = !!o.ring;   // o.ring: knobrow inside a ring, four 42 px cells at x 36-204, 60 px tall
+      const h = (RG ? 60 : T ? 72 : big ? 100 : 56) * s, lpx = RG ? 9 : big ? 12 : 10, vpx = RG ? 12 : big ? 17 : 13, gh = (RG ? 28 : T ? 36 : big ? 34 : 22) * s;
+      const ly = y + (RG ? 10 : big ? 16 : 11) * s, gy = y + (RG ? 14 : big ? 26 : 15) * s, vy = y + (RG ? 55 : T ? 66 : big ? 82 : 51) * s, gw = RG ? 32 : T ? 48 : 50;
+      const cw = RG ? 42 : 60, cx0 = RG ? 36 : 0;
       (Array.isArray(row) ? row : []).slice(0, 4).forEach((c, ci) => {
-        const x = ci * 60, w = 60, cx = x + w / 2;
+        const x = cx0 + ci * cw, w = cw, cx = x + w / 2;
         if (!c) { if (o.dash) text("–", cx, vy, vpx, P.DIM, "center", 700); return; }
         if (o.autoBar && !c.wave && (!c.glyph || c.glyph === "none") && c.pct != null) c = { ...c, glyph: "bar" };
-        const col = on ? cc(c, ci) : P.DIM, isHot = hotCi === ci;
+        const lit = on && !c.dim, col = lit ? cc(c, ci) : P.DIM, isHot = hotCi === ci;   // c.dim: inactive grey
         text(fit(c.label || "", lpx, w - 4, 600), cx, ly, lpx, col, "center", 600);
         if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, cx - gw / 2, gy, gw, gh, col);
         else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
         cellValue(c, cx, vy, w, vpx, col, isHot, o.hotCol);
-        if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + h - 2, w - 8, 2); }
+        if (lit) { ctx.fillStyle = col; ctx.fillRect(x + (RG ? 3 : 4), y + h - 2, w - (RG ? 6 : 8), 2); }
       });
     };
     // the title line (0-24): title left, white 13 px bold; right right-aligned 11 px grey (not on knobrow)
@@ -942,22 +944,33 @@ function renderScreen(scr, palName, S) {
       // a layer screen: a horizontal picker band over one 72 px row of the four knobs (taller glyphs than edit8)
       const items = Array.isArray(p.items) ? p.items : [], n = items.length, sel = Math.max(0, Math.min(n - 1, Number(p.sel) || 0));
       const col = colOf(P, p.col, P.TEXT), name = i => { const it = items[i]; return typeof it === "string" ? it : (it && it.t) || ""; };
-      const rowH = Math.min(72, Math.round(ph * 0.6)), bandH = ph - rowH, size = 34, bigH = size * 1.1, hasVal = p.value != null && p.value !== "";
+      // inside a ring: the row is 60 px of 42 px cells at x 36-204 and its bottom pulled up to y 190 (the ring's
+      // inner edge, R 110.5, crosses x 36 / 204 at y 191.8), the band's neighbours at x 36 / 204, the big item <= 150
+      const ringed = scr.ring != null && scr.ring !== false;
+      const full = ringed ? 60 : 72, rowBot = ringed ? Math.min(py0 + ph, 190) : py0 + ph;
+      const rowH = Math.min(full, Math.round((rowBot - py0) * 0.6)), bandH = rowBot - py0 - rowH, size = 34, bigH = size * 1.1, hasVal = p.value != null && p.value !== "";
       const labelH = p.label ? 14 : 0, stackH = bigH + 10 + (hasVal ? 18 : 0);
       const top = py0 + labelH + (bandH - labelH - stackH) / 2, bigBase = top + bigH * 0.8, marksY = top + bigH + 4;
-      if (p.label) text(fit(p.label, 11, 224, 500), 8, py0 + 12, 11, P.DIM, "left", 500);
-      if (n) {
-        const bigW = Math.min(tw(name(sel), size, 700), 170), room = (234 - 6 - bigW) / 2 - 10;
-        if (sel > 0 && room > 24) text(fit(name(sel - 1), 13, room), 6, bigBase - 4, 13, P.DIM, "left", 500);
-        if (sel < n - 1 && room > 24) text(fit(name(sel + 1), 13, room), 234, bigBase - 4, 13, P.DIM, "right", 500);
-        squeezedText(name(sel), 120, bigBase, size, col, 170);
-        posMarks(n, sel, marksY, col);
+      const L = ringed ? 36 : 6, R = ringed ? 204 : 234, maxW = ringed ? 150 : 170;
+      if (p.label) text(fit(p.label, 11, R - L - 4, 500), L + 2 + (ringed ? 10 : 0), py0 + 12, 11, P.DIM, "left", 500);
+      if (p.band === "keyboard") {
+        // the keyboard kind's 27-key strip (F3..G5) scaled into the band under the label, centred, proportions kept
+        const kh = Math.max(8, Math.min(bandH - labelH - 8, 56)), kw = Math.min(R - L, kh * 224 / 56);
+        drawKeyboard(py0 + labelH + (bandH - labelH - kh) / 2, kh, p.lit, p.labels, 120 - kw / 2, kw);
+      } else {
+        if (n) {
+          const bigW = Math.min(tw(name(sel), size, 700), maxW), room = (R - L - bigW) / 2 - 10;
+          if (sel > 0 && room > 24) text(fit(name(sel - 1), 13, room), L, bigBase - 4, 13, P.DIM, "left", 500);
+          if (sel < n - 1 && room > 24) text(fit(name(sel + 1), 13, room), R, bigBase - 4, 13, P.DIM, "right", 500);
+          squeezedText(name(sel), 120, bigBase, size, col, maxW);
+          posMarks(n, sel, marksY, col);
+        }
+        if (hasVal) text(fit(String(p.value), 13, R - L - 10, 700), 120, marksY + 4 + 15, 13, col, "center", 700);
       }
-      if (hasVal) text(fit(String(p.value), 13, 224, 700), 120, marksY + 4 + 15, 13, col, "center", 700);
-      // the knob row fills the lower 72 px (squeezed when the panel is short)
-      const rs = rowH / 72, rowY = py0 + bandH;
+      // the knob row fills the lower 72 px (60 inside a ring; squeezed when the panel is short)
+      const rs = rowH / full, rowY = py0 + bandH;
       const hc = p.hot != null && p.hot !== "" ? Number(p.hot) : -1;
-      cellRow(Array.isArray(p.cells) ? p.cells : [], rowY, rs, true, hc, false, { dash: true, autoBar: true, tall: true, hotCol: p.hotCol ? colOf(P, p.hotCol, null) : null });
+      cellRow(Array.isArray(p.cells) ? p.cells : [], rowY, rs, true, hc, false, { dash: true, autoBar: true, tall: !ringed, ring: ringed, hotCol: p.hotCol ? colOf(P, p.hotCol, null) : null });
     } else if (kind === "edit8") {
       const wide = p.wide && typeof p.wide === "object" ? p.wide : null;
       const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 2);

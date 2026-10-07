@@ -234,6 +234,14 @@ blue / orange / white / green (or the cell's `col`). A cell with `pct` and no `g
 `bar` glyph; without `pct` it is text only; a `null` cell is a dim `–` with no bar. `hot` = the index
 (0–3) of the cell just turned (its value on a filled block, the value in the background colour);
 `hotCol` overrides the block's colour (name or `#hex`).
+A cell with `dim: true` draws in the inactive grey (label, glyph, value; no coloured bar), even on the
+knob row. `band: "keyboard"` replaces the picker with the `keyboard` kind's 27-key strip (F3..G5) scaled
+into the band under the label (height = the band's room minus the label, at most 56 px; width keeps the
+224:56 proportion, centred); `lit` (key indices, note names or `{ k, col }`) and `labels` as in `keyboard`;
+`items` / `sel` / `value` are ignored. Inside a `ring` the knobrow insets itself: the band's neighbours at
+x 36 / 204, the big item squeezed to 150 px, the label at x 48; the cell row is four 42 px cells at x 36–204,
+60 px tall (label 9 px, a 32 × 28 glyph box, value 12 px bold), its bottom pulled up to y 190 so it stays
+inside the ring's inner edge (R 110.5 crosses x 36 / 204 at y ≈ 191.8).
 
 ```json
 "panel": { "kind": "knobrow", "items": ["Reverb", "Chorus", "Delay", "Drive"], "sel": 0, "col": "green", "label": "fx",
