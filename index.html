@@ -508,11 +508,83 @@ function renderScreen(scr, palName, S) {
   const px0 = 10, pw = 220, py0 = Y_PANEL, ph = H_PANEL;
   const title = () => { let y = py0 + 16; if (p.title) { text(p.title, px0, y, 15, P.THEME, "left", 600); if (p.subtitle) text(fit(p.subtitle, 11, pw - tw(p.title, 15, 600) - 8), px0 + tw(p.title, 15, 600) + 6, y, 11, P.MID); y += 8; } return y; };
 
-  /* a params glyph (knob bar env wave saw square filter steps dots) in a cw x gh box at (x, gy); lk scales the line widths */
-  function drawGlyph(c, x, gy, cw, gh, col, pct, lk) {
+  /* the parameter pictograms (room echoes moon lfo clip spring mix gate range arrow shift): flat 2 px strokes
+     in col, filled parts in col; pct the main value, pct2 (c.pct2, default 0.5) a second one; u = glyph units
+     per screen pixel (the caller's scale), so strokes and pixel sizes stay true when the box is scaled */
+  const PICTO = new Set(["room", "echoes", "moon", "lfo", "clip", "spring", "mix", "gate", "range", "arrow", "shift"]);
+  function drawPicto(g, c, x, y, w, h, col, pct, u) {
+    const lw = 2 * u, m = lw, x0 = x + m, x1 = x + w - m, y0 = y + m, y1 = y + h - m, W = x1 - x0, H = y1 - y0;
+    const cx = x + w / 2, cy = y + h / 2, pct2 = Math.max(0, Math.min(1, Number(c.pct2 ?? 0.5) || 0));
+    ctx.save();
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.setLineDash([]);
+    const line = pts => { ctx.beginPath(); pts.forEach(([a, b], i) => i ? ctx.lineTo(a, b) : ctx.moveTo(a, b)); ctx.stroke(); };
+    if (g === "room") {   // one-point perspective: the far wall shrinks from 70 % to 22 % of the box
+      const bw = Math.min(W, H * 1.4), bh = H, bx = cx - bw / 2, by = y0, f = 0.70 - 0.48 * pct, iw = bw * f, ih = bh * f, ix = cx - iw / 2, iy = cy - ih / 2;
+      ctx.strokeRect(bx, by, bw, bh); ctx.strokeRect(ix, iy, iw, ih);
+      line([[bx, by], [ix, iy]]); line([[bx + bw, by], [ix + iw, iy]]); line([[bx, by + bh], [ix, iy + ih]]); line([[bx + bw, by + bh], [ix + iw, iy + ih]]);
+    } else if (g === "echoes") {   // a struck bar and its decaying repeats; pct = spacing, pct2 = feedback
+      const bw = 3 * u, sp = 5 * u + ((W - bw) / 2 - 5 * u) * pct, d = 0.2 + 0.75 * pct2;
+      ctx.fillRect(x0, y1 - H, bw, H);
+      for (let k = 1, bx = x0 + sp; bx + bw <= x1 + 0.01; k++, bx += sp) {
+        const bh = H * Math.pow(d, k); if (bh < 1.5 * u) break;
+        ctx.fillRect(bx, y1 - bh, bw, bh);
+      }
+      ctx.lineWidth = 1 * u; line([[x0, y1 + 0.5 * u], [x1, y1 + 0.5 * u]]);
+    } else if (g === "moon") {   // a moon phase: lit fraction 8 % (thin crescent) .. 100 % (full)
+      const r = Math.min(W, H) / 2, f = 0.08 + 0.92 * pct, k = 1 - 2 * f, rx = Math.max(0.01, r * Math.abs(k));
+      ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, false);
+      if (k >= 0) ctx.ellipse(cx, cy, rx, r, 0, Math.PI / 2, -Math.PI / 2, true);
+      else ctx.ellipse(cx, cy, rx, r, 0, Math.PI / 2, Math.PI * 1.5, false);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    } else if (g === "lfo") {   // 1..5 cycles, amplitude by pct2
+      const cyc = 1 + 4 * pct, a = (H / 2) * (0.08 + 0.92 * pct2), n = Math.max(24, Math.ceil(W / u));
+      const pts = []; for (let i = 0; i <= n; i++) { const t = i / n; pts.push([x0 + t * W, cy - Math.sin(t * Math.PI * 2 * cyc) * a]); } line(pts);
+    } else if (g === "clip") {   // one sine cycle driven into a clipper: gain 1..10, clipped at the box
+      const gain = 1 + 9 * pct, a = H / 2, n = Math.max(24, Math.ceil(W / u)), pts = [];
+      for (let i = 0; i <= n; i++) { const t = i / n, v = Math.max(-1, Math.min(1, Math.sin(t * Math.PI * 2) * gain)); pts.push([x0 + t * W, cy - v * a]); }
+      if (pct > 0.1) { ctx.save(); ctx.lineWidth = 1 * u; ctx.setLineDash([2 * u, 2 * u]); line([[x0, y0], [x1, y0]]); line([[x0, y1], [x1, y1]]); ctx.restore(); }
+      line(pts);
+    } else if (g === "spring") {   // a coil of 6.5 turns between two short straight ends
+      const e = W * 0.12, zx0 = x0 + e, zw = W - 2 * e, a = H * 0.36, segs = 13, pts = [[x0, cy], [zx0, cy]];
+      for (let i = 0; i < segs; i++) pts.push([zx0 + zw * (i + 0.5) / segs, cy + (i % 2 ? a : -a)]);
+      pts.push([zx0 + zw, cy], [x1, cy]); line(pts);
+    } else if (g === "mix") {   // dry (back, outlined) and wet (front, filled to pct from the bottom)
+      const s = Math.min(W, H) * 0.72, off = Math.min(W, H) - s, bx = cx - (s + off) / 2, by = cy - (s + off) / 2, fx = bx + off, fy = by + off;
+      ctx.save(); ctx.beginPath(); ctx.rect(x - lw, y - lw, w + 2 * lw, h + 2 * lw); ctx.rect(fx - lw, fy - lw, s + 2 * lw, s + 2 * lw);
+      ctx.clip("evenodd"); ctx.strokeRect(bx, by, s, s); ctx.restore();   // the front square hides the back one
+      if (pct > 0) ctx.fillRect(fx, fy + s * (1 - pct), s, s * pct);
+      ctx.strokeRect(fx, fy, s, s);
+    } else if (g === "gate") {   // a pulse 10..100 % of the box wide on a baseline
+      const pw = W * (0.1 + 0.9 * pct), top = y0 + H * 0.12;
+      line([[x0, y1], [x0, top], [x0 + pw, top], [x0 + pw, y1], [x1, y1]]);
+    } else if (g === "range") {   // a span with end stops and a thick segment 10..100 % from the left
+      const t = H * 0.25;
+      line([[x0, cy], [x1, cy]]); line([[x0, cy - t], [x0, cy + t]]); line([[x1, cy - t], [x1, cy + t]]);
+      ctx.lineWidth = 5 * u; ctx.lineCap = "butt"; line([[x0, cy], [x0 + W * (0.1 + 0.9 * pct), cy]]);
+    } else if (g === "arrow") {   // up / down / up-and-down / random (three dots)
+      const hd = Math.min(H * 0.32, W * 0.3);
+      const arrow = (ax, up) => { const t = up ? y0 : y1, b = up ? y1 : y0, s = up ? 1 : -1;
+        line([[ax, b], [ax, t]]); line([[ax - hd, t + s * hd], [ax, t], [ax + hd, t + s * hd]]); };
+      if (pct < 0.25) arrow(cx, true);
+      else if (pct < 0.5) arrow(cx, false);
+      else if (pct < 0.75) { const dx = Math.min(W * 0.22, hd * 1.4); arrow(cx - dx, true); arrow(cx + dx, false); }
+      else { const r = 2.5 * u, d = Math.min(W, H) * 0.32;
+        [[cx, cy - d], [cx - d * 0.95, cy + d * 0.6], [cx + d * 0.95, cy + d * 0.6]].forEach(([a, b]) => { ctx.beginPath(); ctx.arc(a, b, r, 0, Math.PI * 2); ctx.fill(); }); }
+    } else if (g === "shift") {   // five staff lines with a square on line round(pct * 4) from the bottom
+      const sq = Math.max(4 * u, H / 4 * 0.8), ly0 = y0 + sq / 2, ly1 = y1 - sq / 2, gap = (ly1 - ly0) / 4, lw2 = Math.min(W, H * 1.6);
+      for (let i = 0; i < 5; i++) { const yy = ly0 + i * gap; line([[cx - lw2 / 2, yy], [cx + lw2 / 2, yy]]); }
+      const yy = ly1 - Math.round(pct * 4) * gap; ctx.fillRect(cx - sq / 2, yy - sq / 2, sq, sq);
+    }
+    ctx.restore();
+  }
+  /* a params glyph (knob bar env wave saw square filter steps dots, or a PICTO) in a cw x gh box at (x, gy);
+     lk scales the line widths; u = glyph units per screen pixel (for the pictograms) */
+  function drawGlyph(c, x, gy, cw, gh, col, pct, lk, u) {
     const cx = x + cw / 2;
-    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.5 * lk; ctx.lineJoin = "round"; ctx.lineCap = "round";
     const g = c.glyph || "knob";
+    if (PICTO.has(g)) { drawPicto(g, c, x, gy, cw, gh, col, pct, u || 1); return; }
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.5 * lk; ctx.lineJoin = "round"; ctx.lineCap = "round";
     if (g === "env") { const e = c.env || [0.2, 0.3, 0.6, 0.3], w = cw - 10, bx = x + 5, by = gy + gh - 6;
       const ax = bx + w * 0.3 * e[0], dx = ax + w * 0.3 * e[1], sx = bx + w * 0.72, rx = sx + w * 0.28 * e[3], sy = by - (gh - 14) * e[2];
       ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ax, gy + 8); ctx.lineTo(dx, sy); ctx.lineTo(sx, sy); ctx.lineTo(rx, by); ctx.stroke(); }
@@ -824,7 +896,7 @@ function renderScreen(scr, palName, S) {
         ctx.fillRect(bx - 3, m - 0.5, bw + 6, 1); return; }
       const s = h / 64;
       ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-      drawGlyph(c, 0, 0, w / s, 64, col, clamp01(c.pct ?? 0.5), 0.8 / s);
+      drawGlyph(c, 0, 0, w / s, 64, col, clamp01(c.pct ?? 0.5), 0.8 / s, 1 / s);
       ctx.restore();
     };
     // the value, on a filled block when hot
@@ -843,18 +915,19 @@ function renderScreen(scr, palName, S) {
     };
     // one row of four 60 px cells at y (edit8's metrics: big = no wide band; s = vertical scale; on = the knob row);
     // hotCi = the hot cell's index (-1 none); o.dash: a null cell draws a dim "–"; o.autoBar: a cell with pct and
-    // no glyph / wave draws the bar glyph; o.hotCol: the hot block's colour
+    // no glyph / wave draws the bar glyph; o.hotCol: the hot block's colour; o.tall: knobrow's 72 px row
+    // (label 10, a 48 x 36 glyph box, value 13 bold, the 2 px bar)
     const cellRow = (row, y, s, on, hotCi, big, o) => {
       o = o || {};
-      const h = (big ? 100 : 56) * s, lpx = big ? 12 : 10, vpx = big ? 17 : 13, gh = (big ? 34 : 22) * s;
-      const ly = y + (big ? 16 : 11) * s, gy = y + (big ? 26 : 15) * s, vy = y + (big ? 82 : 51) * s;
+      const T = !!o.tall, h = (T ? 72 : big ? 100 : 56) * s, lpx = big ? 12 : 10, vpx = big ? 17 : 13, gh = (T ? 36 : big ? 34 : 22) * s;
+      const ly = y + (big ? 16 : 11) * s, gy = y + (big ? 26 : 15) * s, vy = y + (T ? 66 : big ? 82 : 51) * s, gw = T ? 48 : 50;
       (Array.isArray(row) ? row : []).slice(0, 4).forEach((c, ci) => {
         const x = ci * 60, w = 60, cx = x + w / 2;
         if (!c) { if (o.dash) text("–", cx, vy, vpx, P.DIM, "center", 700); return; }
         if (o.autoBar && !c.wave && (!c.glyph || c.glyph === "none") && c.pct != null) c = { ...c, glyph: "bar" };
         const col = on ? cc(c, ci) : P.DIM, isHot = hotCi === ci;
         text(fit(c.label || "", lpx, w - 4, 600), cx, ly, lpx, col, "center", 600);
-        if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, x + 5, gy, w - 10, gh, col);
+        if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, cx - gw / 2, gy, gw, gh, col);
         else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
         cellValue(c, cx, vy, w, vpx, col, isHot, o.hotCol);
         if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + h - 2, w - 8, 2); }
@@ -866,10 +939,10 @@ function renderScreen(scr, palName, S) {
     if (p.title && kind !== "knobrow") text(fit(p.title, 13, 224 - rw - (rw ? 8 : 0), 700), 8, Y(17), 13, colOf(P, p.titleCol, P.TEXT), "left", 700);
 
     if (kind === "knobrow") {
-      // a layer screen: a horizontal picker band (upper 55 %) over one row of the four knobs (edit8's wide metrics)
+      // a layer screen: a horizontal picker band over one 72 px row of the four knobs (taller glyphs than edit8)
       const items = Array.isArray(p.items) ? p.items : [], n = items.length, sel = Math.max(0, Math.min(n - 1, Number(p.sel) || 0));
       const col = colOf(P, p.col, P.TEXT), name = i => { const it = items[i]; return typeof it === "string" ? it : (it && it.t) || ""; };
-      const bandH = Math.round(ph * 0.55), size = 34, bigH = size * 1.1, hasVal = p.value != null && p.value !== "";
+      const rowH = Math.min(72, Math.round(ph * 0.6)), bandH = ph - rowH, size = 34, bigH = size * 1.1, hasVal = p.value != null && p.value !== "";
       const labelH = p.label ? 14 : 0, stackH = bigH + 10 + (hasVal ? 18 : 0);
       const top = py0 + labelH + (bandH - labelH - stackH) / 2, bigBase = top + bigH * 0.8, marksY = top + bigH + 4;
       if (p.label) text(fit(p.label, 11, 224, 500), 8, py0 + 12, 11, P.DIM, "left", 500);
@@ -881,10 +954,10 @@ function renderScreen(scr, palName, S) {
         posMarks(n, sel, marksY, col);
       }
       if (hasVal) text(fit(String(p.value), 13, 224, 700), 120, marksY + 4 + 15, 13, col, "center", 700);
-      // the knob row, centred in the lower part (squeezed if that is under 60 px)
-      const lowTop = py0 + bandH, lowH = py0 + ph - lowTop, rs = Math.min(1, lowH / 60), rowY = lowTop + (lowH - 56 * rs) / 2;
+      // the knob row fills the lower 72 px (squeezed when the panel is short)
+      const rs = rowH / 72, rowY = py0 + bandH;
       const hc = p.hot != null && p.hot !== "" ? Number(p.hot) : -1;
-      cellRow(Array.isArray(p.cells) ? p.cells : [], rowY, rs, true, hc, false, { dash: true, autoBar: true, hotCol: p.hotCol ? colOf(P, p.hotCol, null) : null });
+      cellRow(Array.isArray(p.cells) ? p.cells : [], rowY, rs, true, hc, false, { dash: true, autoBar: true, tall: true, hotCol: p.hotCol ? colOf(P, p.hotCol, null) : null });
     } else if (kind === "edit8") {
       const wide = p.wide && typeof p.wide === "object" ? p.wide : null;
       const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 2);

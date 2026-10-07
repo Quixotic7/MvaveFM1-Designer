@@ -162,13 +162,36 @@ vertically into the remaining panel).
 
 **Shared.** The top line (y 0–24): `title` left in 13 px bold (`titleCol`, default white; a trailing
 `*` means "edited"), `right` right-aligned in 11 px grey. A **cell** is `null` (empty) or
-`{ label, value, col, glyph, pct, bipolar, env, cycles, n, wave, shape }`:
+`{ label, value, col, glyph, pct, pct2, bipolar, env, cycles, n, wave, shape }`:
 
 - `col` its knob colour; without it the colour is taken by column index: **blue, orange, white, green**
   (KNOB 1–4; palettes without those names fall back to theme / accent / text / mint).
 - `glyph` one of the `params` glyphs `knob bar env wave saw square filter steps dots` (same fields:
-  `pct`, `env`, `cycles`, `n`), drawn small; omitted or `"none"` = a text cell.
+  `pct`, `env`, `cycles`, `n`), drawn small, or a **parameter pictogram** (below); omitted or `"none"` =
+  a text cell.
 - `pct` 0–1: drives the glyph; a text cell (no glyph) draws it as a small horizontal bar.
+- `pct2` 0–1 (default 0.5): a pictogram's second value (`echoes`, `lfo`).
+- Parameter pictograms (flat 2 px strokes in the cell colour, round joins; filled parts in the cell colour;
+  a dim row draws them in the grey; they change shape with `pct`):
+  - `room` a room in one-point perspective (box, far wall, four corner lines); `pct` = size: the far wall
+    shrinks from 70 % of the box (0) to 22 % (1).
+  - `echoes` a struck bar and its repeats to the right; `pct` = spacing (0: 5 px apart, 1: three bars fill
+    the box); `pct2` = feedback (each repeat is 0.2 + 0.75·`pct2` of the one before; repeats under 1.5 px
+    are dropped); as many as fit.
+  - `moon` a moon phase (tone / damping): the lit part filled, the dark part outline only; `pct` 0 a thin
+    crescent, 0.5 half, 1 full.
+  - `lfo` a sine across the box; `pct` = rate (1 to 5 cycles), `pct2` = depth (nearly flat to full height).
+  - `clip` one sine cycle whose peaks flatten with `pct` = drive (gain 1 to 10, clean to nearly square),
+    with dashed clip lines at the flattened level when `pct` > 0.1.
+  - `spring` a coil (6.5 zigzag turns between two short straight ends); `pct` ignored.
+  - `mix` dry / wet: two squares offset diagonally, the back one outlined (dry), the front one filled from
+    the bottom to `pct` of its height (wet).
+  - `gate` a pulse on a baseline, 10–100 % of the box wide by `pct`.
+  - `range` a line with end stops and a thick segment from the left over 10–100 % of it by `pct`.
+  - `arrow` a direction: `pct` < 0.25 up, < 0.5 down, < 0.75 up and down (two arrows), else three dots
+    in a triangle (random).
+  - `shift` five staff lines with a filled square on line `round(pct·4)` (0 the bottom, 1 the top): an
+    octave shift.
 - `bipolar: true`: the bar is centre-zero, **`pct` 0.5 = zero** (0 = full negative, 1 = full positive);
   with `glyph: "bar"` the vertical bar grows up / down from the middle.
 - `wave` (optional, `SAW SQR TRI SIN PWM NOIS`, with `shape` 0–1 = PWM duty / TRI peak and `cycles`,
@@ -199,13 +222,14 @@ vertically into the remaining panel).
 - `null` / omitted: no band, the rows get the room and larger glyphs.
 
 **`knobrow`** (a layer screen, drawn in the normal panel under the header, which carries the layer name;
-no title or footer of its own): the upper 55 % of the panel (y 28–122 with a footer, 28–145 without) is a
-horizontal picker: `items[sel]` (strings or `{ t }`) centred, 34 px bold in `col` (default text colour),
+no title or footer of its own): the panel above the 72 px cell row (y 28–126 with a footer, 28–168 without)
+is a horizontal picker: `items[sel]` (strings or `{ t }`) centred, 34 px bold in `col` (default text colour),
 squeezed to at most 170 px, its neighbours 13 px dim at the left and right edges (hidden when there is no
 room), the picker's position marks under it (the selected one in `col`), `label` 11 px dim at x 8 above it,
-`value` 13 px bold in `col` under the marks (both only when non-empty). The lower part holds one row of four
-cells (`cells`, KNOB 1–4) centred in it (y ≈ 132–188 with a footer, 164–220 without), drawn as `edit8`'s
-active row with a wide band (label 10 px, a 22 px glyph, value 13 px bold, the 2 px knob-colour bar),
+`value` 13 px bold in `col` under the marks (both only when non-empty). The lowest 72 px hold one row of four
+cells (`cells`, KNOB 1–4; y 126–198 with a footer, 168–240 without; squeezed when the panel is short), drawn
+as `edit8`'s active row but taller (label 10 px, a 48 × 36 px glyph box, value 13 px bold at +66, the 2 px
+knob-colour bar),
 blue / orange / white / green (or the cell's `col`). A cell with `pct` and no `glyph` / `wave` draws the
 `bar` glyph; without `pct` it is text only; a `null` cell is a dim `–` with no bar. `hot` = the index
 (0–3) of the cell just turned (its value on a filled block, the value in the background colour);
