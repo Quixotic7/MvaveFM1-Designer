@@ -416,6 +416,7 @@ function normScreen(sc) {
   o.panel = sc.panel && typeof sc.panel === "object" ? sc.panel : d.panel;
   o.footer = sc.footer === null ? null : (sc.footer && typeof sc.footer === "object" ? sc.footer : d.footer);
   o.note = typeof sc.note === "string" ? sc.note : "";
+  if (sc.loop && typeof sc.loop === "object") o.loop = JSON.parse(JSON.stringify(sc.loop)); else delete o.loop; // the loop indicator (bar / dial / mark)
   return o;
 }
 
@@ -463,9 +464,10 @@ function renderScreen(scr, palName, S) {
     if (h.bpm != null && h.bpm !== "") { text(h.bpm, x + 2, 17, 15, h.hot ? P.ACCENT : P.THEME, "left", 600); x += tw(h.bpm, 15, 600) + 6; if (h.unit !== false) { text("bpm", x, 17, 9, P.MID); x += 22; } }
     // right: text, usb, battery (measured first so the middle text stops before them)
     let rx = 236, rightW = 0;
+    const loopSt = scr.loop && scr.loop.style, loopW = loopSt === "dial" ? 22 : loopSt === "mark" ? 16 : 0; // room for the loop dial / mark at the right end
     if (h.batt != null && h.batt !== false) rightW += 26;
     if (h.usb) rightW += 22;
-    if (h.right) rightW += tw(h.right, 12, 600) + 8;
+    if (h.right) rightW += tw(h.right, 12, 600) + 8 + loopW;
     if (h.mid) text(fit(h.mid, bare ? 15 : 12, 236 - rightW - x - 10, 600), x + 8, bare ? 18 : 16.5, bare ? 15 : 12, colOf(P, h.midCol, P.TEXT), "left", 600);
     if (h.batt != null && h.batt !== false) {
       rx -= 20; rr(rx, 7, 16, 10, 2, null, P.MID); ctx.fillStyle = P.MID; ctx.fillRect(rx + 16.5, 9.5, 2, 5);
@@ -474,7 +476,7 @@ function renderScreen(scr, palName, S) {
       rx -= 6;
     }
     if (h.usb) { text("USB", rx, 16, 9, P.MID, "right", 600); rx -= 22; }
-    if (h.right) text(h.right, rx, bare ? 18 : 16.5, bare ? 15 : 12, colOf(P, h.rightCol, bare ? P.TEXT : P.MID), "right", 600);
+    if (h.right) text(h.right, rx - loopW, bare ? 18 : 16.5, bare ? 15 : 12, colOf(P, h.rightCol, bare ? P.TEXT : P.MID), "right", 600);
   }
 
   /* cards: label (S, MID) at top, value (M, THEME; hot: ACCENT) below, a gauge dash */
@@ -980,6 +982,25 @@ function renderScreen(scr, palName, S) {
     ctx.lineWidth = 5; ctx.lineCap = "butt";
     ctx.strokeStyle = P.LINE; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(120, 120, R, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     if (pct > 0) { ctx.strokeStyle = scr.ringRec ? P.REC : colOf(P, scr.ringCol, P.THEME); ctx.beginPath(); ctx.arc(120, 120, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct); ctx.stroke(); }
+  }
+  /* the loop indicator (an alternative to the ring): a stripe under the header / at the bottom, a dial or a mark in the header */
+  if (scr.loop && typeof scr.loop === "object") {
+    const L = scr.loop, pct = Math.max(0, Math.min(1, Number(L.pct) || 0)), col = colOf(P, L.col, P.REC);
+    if (L.style === "bar") {
+      const y = L.pos === "bottom" ? 236 : 25, bh = L.pos === "bottom" ? 4 : 3, bars = Math.round(Number(L.bars) || 1), tip = 240 * pct;
+      ctx.fillStyle = P.LINE; ctx.fillRect(0, y, 240, bh);
+      if (pct > 0) { ctx.fillStyle = col; ctx.fillRect(0, y, tip, bh); }
+      if (bars > 1) { ctx.fillStyle = P.BG; for (let k = 1; k < bars; k++) ctx.fillRect(240 * k / bars - 1, y, 2, bh); }
+      if (L.on) { ctx.fillStyle = P.TEXT; ctx.fillRect(Math.min(238, Math.max(0, tip - 1)), y, 2, bh); }
+    } else if (L.style === "dial") {
+      ctx.save(); ctx.lineWidth = 3; ctx.lineCap = "butt";
+      ctx.strokeStyle = P.LINE; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(229, 12, 8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      if (pct > 0) { ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(229, 12, 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct); ctx.stroke(); }
+      ctx.restore();
+    } else if (L.style === "mark") {
+      if (L.on) { ctx.fillStyle = col; ctx.fillRect(226, 8, 8, 8); }
+      else { ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([]); ctx.strokeRect(227, 9, 6, 6); ctx.restore(); }
+    }
   }
   if (scr.message) { // a transient message box
     const w = Math.min(228, tw(scr.message, 16, 600) + 28);

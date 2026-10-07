@@ -100,6 +100,7 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
   "panel": { "kind": "chord", "root": "C", "quality": "", "sup": "M7", "notes": "G4 B4 C5 E5", "key": "", "hint": "" },
   "footer": { "left": "12 PLUCK", "right": "BASS OFF" },
   "ring": 0.35, "ringRec": true,
+  "loop": { "style": "bar", "pos": "top", "pct": 0.62, "bars": 4, "on": false, "col": "red" },
   "message": "PANIC · all notes off",
   "note": "legend text for this screen"
 }
@@ -117,6 +118,14 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
   drawn as keycap chips (Felucca's footer). `null` removes the footer.
 - `ring` 0–1 draws Orchid's ring progress indicator: a dotted circle round the screen edge with the
   progress solid (`ringRec` in red; `0` draws just the track).
+- `loop` `{ style, pos, pct, bars, on, col }` a quieter loop progress indicator (drawn after the footer,
+  under `message`); `pct` 0–1 (clamped), `col` the progress colour (default red), `on: true` the downbeat
+  frame. `style: "bar"`: a stripe the full width, `pos: "top"` (default) y 25–28 (between header and panel)
+  or `"bottom"` y 236–240; the track dim, the elapsed part from the left in `col`; `bars` > 1 cuts 2 px
+  background gaps at x = 240·k/bars; `on` adds a 2 px white tick at the tip. `"dial"`: a mini ring r 8 at
+  (229, 12), 3 px, dotted track, the arc clockwise from 12 o'clock; the header's `right` moves 22 px left.
+  `"mark"`: an 8×8 square at x 226–234, y 8–16, filled when `on`, else a 2 px outline; `right` moves 16 px
+  left. Any other style draws nothing; dial and mark draw even with `header: null`.
 - `message` draws an inverted message box over the panel (`messageCol`); `ringCol` colours the ring.
 - `panel.kind` selects the template:
 
@@ -140,7 +149,7 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
 | `scope` | `root quality sup amp freq` | an oscilloscope wave (React view) |
 | `text` | `title lines` | free lines; a line is `{ t, px, col: theme\|accent\|dim, center, w }` or a string |
 | `loop` | `value label pct rec layers status title right` | the loop page: a ring with the bar count inside, layer rings, a status line |
-| `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
+| `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a DX7 envelope, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
 | `stack` | `title titleCol right cols rows active hot` | N = 1–8 equal rows of four cells under column headings (oscillators, LFOs, the 8-slot mod matrix), a row label at the left; the `active` row in the knob colours, the others grey. See **Sound editor panels** |
 
 ### Sound editor panels (`edit8`, `stack`)
@@ -178,6 +187,13 @@ vertically into the remaining panel).
   peak over a dashed 0 dB pass level; `ftype` top left, `DRIVE n` top right when `drive` > 0.
 - `{ "type": "wave", "wave": "SAW"|"SQR"|"TRI"|"SIN"|"PWM"|"NOIS", "shape", "cycles", "col" }`: two
   cycles (default) across the screen (3 px, blue = KNOB 1).
+- `{ "type": "dx", "r": [r1, r2, r3, r4], "l": [l1, l2, l3, l4], "seg", "pitch", "col" }` (rates and levels 0–99,
+  the DX7's): a DX7 envelope (the firmware's FM6 operator envelopes and pitch EG, `CR_W_DX`): from L4 to L1 at R1,
+  to L2 at R2, to L3 at R3, held at L3 (the key down), to L4 at R4; a segment's width grows with the distance it
+  moves and the slowness of its rate (a sketch, not to scale); 3 px white over a faint baseline; segment `seg`
+  (1..4: the one R k / L k ends, `null` = none) thicker in `col` (as `env`); digits 1–4 under the segments;
+  `pitch: true`: a faint centre line at 50 (the pitch EG's no-change level). The designer's renderer does not draw
+  it yet (the firmware does: firmware/src/cr_draw.c `cr_wide`).
 - `null` / omitted: no band, the rows get the room and larger glyphs.
 
 Layout (cells 60 px wide at x = 60·c): with `wide` — title 0–24, wide band 24–120, row A 124–180,
