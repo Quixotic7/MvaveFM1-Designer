@@ -123,7 +123,8 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
   frame. `style: "bar"`: a stripe the full width, `pos: "top"` (default) y 25–28 (between header and panel)
   or `"bottom"` y 236–240; the track dim, the elapsed part from the left in `col`; `bars` > 1 cuts 2 px
   background gaps at x = 240·k/bars; `on` adds a 2 px white tick at the tip. `"dial"`: a mini ring r 8 at
-  (229, 12), 3 px, dotted track, the arc clockwise from 12 o'clock; the header's `right` moves 22 px left.
+  (229, 12), 3 px, dotted track, the arc clockwise from 12 o'clock (5 px when `on`: the downbeat pulse
+  frame; the track stays 3 px); the header's `right` moves 22 px left.
   `"mark"`: an 8×8 square at x 226–234, y 8–16, filled when `on`, else a 2 px outline; `right` moves 16 px
   left. Any other style draws nothing; dial and mark draw even with `header: null`.
 - `message` draws an inverted message box over the panel (`messageCol`); `ringCol` colours the ring.
@@ -133,6 +134,7 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
 | --- | --- | --- |
 | `chord` | `root quality sup notes line lineCol bubbles bubbleStyle cols squeeze block key trans hint size` | the chord name in the Orchid Standard Framework: root big, quality (`m`, `dim`, `sus`, `+`) after it, extensions (`M7`, `7 9`, `JAZZ`) as a superscript, coloured by `cols: { root, quality, sup }`; the name is squeezed horizontally to fit (`squeeze` 0–1 forces a factor: an animation frame); `bubbles` = the voiced notes as a coloured text line `[{ t, col, mark }]` (`bubbleStyle: "disc"` draws discs instead); `block` fills the panel with a colour; `line` a one-line note; `hint` when empty |
 | `picker` | `items sel label col value title orient size` | one choice at a time: the current item huge (squeezed to fit), its neighbours peeking small and faded above and below (`orient: "h"`: left and right), square position marks, the value under it; items are strings or `{ t, v }` |
+| `knobrow` | `items sel col label value cells hot hotCol` | a layer screen: a horizontal `picker` band over one row of the four knobs (`edit8`'s cells). See **Sound editor panels** |
 | `meter` | `value sub label col pct segments thick title size` | a knob's value huge in its colour over a stripe meter of `segments` blocks filled to `pct` |
 | `stripes` | `bands band gap phase skew title titleSize titleCol titleY y sub` | mod racing stripes: bold horizontal bands in the `bands` colours, the name above; `phase` 0–1 slides them (an animation frame) |
 | `roundel` | `rings title titleSize titleCol bandCol sub r cx cy` | the mod target: concentric rings in the `rings` colours (outer first) with a text band across the middle |
@@ -152,7 +154,7 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
 | `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a DX7 envelope, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
 | `stack` | `title titleCol right cols rows active hot` | N = 1–8 equal rows of four cells under column headings (oscillators, LFOs, the 8-slot mod matrix), a row label at the left; the `active` row in the knob colours, the others grey. See **Sound editor panels** |
 
-### Sound editor panels (`edit8`, `stack`)
+### Sound editor panels (`edit8`, `stack`, `knobrow`)
 
 Both are drawn for the full 240 × 240 screen: give them `header: null`, `cards: null`, `footer: null`
 (if the state sets a header, cards or a footer they are drawn as usual and the layout below is squeezed
@@ -195,6 +197,26 @@ vertically into the remaining panel).
   `pitch: true`: a faint centre line at 50 (the pitch EG's no-change level). The designer's renderer does not draw
   it yet (the firmware does: firmware/src/cr_draw.c `cr_wide`).
 - `null` / omitted: no band, the rows get the room and larger glyphs.
+
+**`knobrow`** (a layer screen, drawn in the normal panel under the header, which carries the layer name;
+no title or footer of its own): the upper 55 % of the panel (y 28–122 with a footer, 28–145 without) is a
+horizontal picker: `items[sel]` (strings or `{ t }`) centred, 34 px bold in `col` (default text colour),
+squeezed to at most 170 px, its neighbours 13 px dim at the left and right edges (hidden when there is no
+room), the picker's position marks under it (the selected one in `col`), `label` 11 px dim at x 8 above it,
+`value` 13 px bold in `col` under the marks (both only when non-empty). The lower part holds one row of four
+cells (`cells`, KNOB 1–4) centred in it (y ≈ 132–188 with a footer, 164–220 without), drawn as `edit8`'s
+active row with a wide band (label 10 px, a 22 px glyph, value 13 px bold, the 2 px knob-colour bar),
+blue / orange / white / green (or the cell's `col`). A cell with `pct` and no `glyph` / `wave` draws the
+`bar` glyph; without `pct` it is text only; a `null` cell is a dim `–` with no bar. `hot` = the index
+(0–3) of the cell just turned (its value on a filled block, the value in the background colour);
+`hotCol` overrides the block's colour (name or `#hex`).
+
+```json
+"panel": { "kind": "knobrow", "items": ["Reverb", "Chorus", "Delay", "Drive"], "sel": 0, "col": "green", "label": "fx",
+           "cells": [ {"label": "Size", "value": "60", "pct": 0.6}, {"label": "Damp", "value": "40", "pct": 0.4},
+                      {"label": "Type", "value": "Room"}, {"label": "Amount", "value": "25", "pct": 0.25} ],
+           "hot": 1, "hotCol": null, "value": "" }
+```
 
 Layout (cells 60 px wide at x = 60·c): with `wide` — title 0–24, wide band 24–120, row A 124–180,
 row B 184–240 (label 10 px, glyph 22 px, value 13 px bold); without — row A 30–130, row B 134–234

@@ -439,6 +439,10 @@ function renderScreen(scr, palName, S) {
   const text = (s, x, y, px, col, align, w) => { if (s == null || s === "") return 0; ctx.font = font(px, w); ctx.fillStyle = col; ctx.textAlign = align || "left"; ctx.textBaseline = "alphabetic"; ctx.fillText(String(s), x, y); return ctx.measureText(String(s)).width; };
   const tw = (s, px, w) => { ctx.font = font(px, w); return ctx.measureText(String(s)).width; };
   const fit = (s, px, maxW, w) => { s = String(s); if (tw(s, px, w) <= maxW) return s; while (s.length > 1 && tw(s + "…", px, w) > maxW) s = s.slice(0, -1); return s + "…"; };
+  // centred bold text squeezed horizontally to at most maxW (the picker's big item)
+  const squeezedText = (t, x, y, px, c, maxW) => { const w = tw(t, px, 700), sx = Math.min(1, maxW / w); ctx.save(); ctx.translate(x, y); ctx.scale(sx, 1); ctx.translate(-x, -y); text(t, x, y, px, c, "center", 700); ctx.restore(); };
+  // the picker's position marks: n small blocks centred on x 120 at y, the selected one in col
+  const posMarks = (n, sel, y, col) => { const mw = Math.min(8, Math.floor(200 / n) - 3), gap = 4, x0 = 120 - (n * mw + (n - 1) * gap) / 2; for (let i = 0; i < n; i++) { ctx.fillStyle = i === sel ? col : P.LINE; ctx.fillRect(x0 + i * (mw + gap), y, mw, 4); } };
   const chip = (x, y, label, on) => {   // a keycap chip: KEY fill, INK label, S 12 px
     const w = Math.max(18, tw(label, 10, 600) + 10);
     rr(x, y - 10, w, 14, 3, on === false ? P.DIM : P.KEY);
@@ -747,7 +751,7 @@ function renderScreen(scr, palName, S) {
     const labelH = p.label ? 18 : 0, marksH = ringed ? 0 : 10;
     const stackH = nbH + bigH + valH + nbH, top = py0 + (ph - labelH - marksH - stackH) / 2 - 2;
     const bigBase = top + nbH + bigH * 0.8;
-    const squeezed = (t, x, y, px, c) => { const w = tw(t, px, 700), sx = Math.min(1, maxW / w); ctx.save(); ctx.translate(x, y); ctx.scale(sx, 1); ctx.translate(-x, -y); text(t, x, y, px, c, "center", 700); ctx.restore(); };
+    const squeezed = (t, x, y, px, c) => squeezedText(t, x, y, px, c, maxW);
     if (p.title) text(p.title, px0, py0 + 16, 14, colOf(P, p.titleCol, P.MID), "left", 600);
     if (horiz) {
       const lx = ringed ? 36 : 6, rx = ringed ? 204 : 234, bigW = Math.min(tw(name(sel), size, 700), maxW), room = (rx - lx - bigW) / 2 - 10;
@@ -760,7 +764,7 @@ function renderScreen(scr, palName, S) {
     squeezed(name(sel), 120, bigBase, size, col);
     if (hasVal) text(String(val), 120, top + nbH + bigH + 20, 20, col, "center", 700);
     if (p.label) text(p.label, 120, py0 + ph - marksH - (ringed ? 34 : 8), 13, P.MID, "center", 500);
-    if (n > 1 && !ringed) { const mw = Math.min(8, Math.floor(200 / n) - 3), gap = 4, x0 = 120 - (n * mw + (n - 1) * gap) / 2; for (let i = 0; i < n; i++) { ctx.fillStyle = i === sel ? col : P.LINE; ctx.fillRect(x0 + i * (mw + gap), py0 + ph - 8, mw, 4); } }
+    if (n > 1 && !ringed) posMarks(n, sel, py0 + ph - 8, col);
   } else if (kind === "meter") {
     // a knob's value huge in its colour over a stripe meter: `segments` bold blocks, filled up to `pct`
     const col = colOf(P, p.col, P.THEME), size = p.size || 104, n = p.segments || 12, pct = Math.max(0, Math.min(1, Number(p.pct ?? 0)));
@@ -801,7 +805,7 @@ function renderScreen(scr, palName, S) {
       text(fit(String(c.value ?? ""), 15, cw - 2, 700), cx, gy + gh + 33, 15, col, "center", 700);
     });
     if (p.foot) text(p.foot, 120, py0 + ph - 8, 11, P.MID, "center", 500);
-  } else if (kind === "edit8" || kind === "stack") {
+  } else if (kind === "edit8" || kind === "stack" || kind === "knobrow") {
     // the dense sound editor: up to 8 parameters (edit8: a wide graphic over two rows of four) or a stack of
     // N rows of four (stack). The layout is designed for the full 240 px screen (header / cards / footer null);
     // with a header, cards or footer it is squeezed vertically into the panel.
@@ -824,9 +828,9 @@ function renderScreen(scr, palName, S) {
       ctx.restore();
     };
     // the value, on a filled block when hot
-    const cellValue = (c, cx, vy, w, vpx, col, isHot) => {
+    const cellValue = (c, cx, vy, w, vpx, col, isHot, blockCol) => {
       const v = fit(String(c.value ?? ""), vpx, w - 6, 700);
-      if (isHot) rr(cx - w / 2 + 3, vy - vpx - 1, w - 6, vpx + 5, 2, col);
+      if (isHot) rr(cx - w / 2 + 3, vy - vpx - 1, w - 6, vpx + 5, 2, blockCol || col);
       text(v, cx, vy, vpx, isHot ? P.BG : col, "center", 700);
     };
     // a small horizontal pct bar: from the left, or centre-zero when bipolar (pct 0.5 = zero)
@@ -837,30 +841,56 @@ function renderScreen(scr, palName, S) {
         ctx.fillRect(m - 0.5, by - 2, 1, bh + 4); ctx.fillStyle = col; ctx.fillRect(Math.min(m, m + v), by, Math.abs(v), bh); ctx.fillRect(m - 0.5, by - 2, 1, bh + 4); }
       else { ctx.fillStyle = col; ctx.fillRect(x, by, w * clamp01(c.pct), bh); }
     };
-    // the title line (0-24): title left, white 13 px bold; right right-aligned 11 px grey
-    const rw = p.right ? tw(p.right, 11, 600) : 0;
-    if (p.right) text(p.right, 232, Y(17), 11, P.MID, "right", 600);
-    if (p.title) text(fit(p.title, 13, 224 - rw - (rw ? 8 : 0), 700), 8, Y(17), 13, colOf(P, p.titleCol, P.TEXT), "left", 700);
+    // one row of four 60 px cells at y (edit8's metrics: big = no wide band; s = vertical scale; on = the knob row);
+    // hotCi = the hot cell's index (-1 none); o.dash: a null cell draws a dim "–"; o.autoBar: a cell with pct and
+    // no glyph / wave draws the bar glyph; o.hotCol: the hot block's colour
+    const cellRow = (row, y, s, on, hotCi, big, o) => {
+      o = o || {};
+      const h = (big ? 100 : 56) * s, lpx = big ? 12 : 10, vpx = big ? 17 : 13, gh = (big ? 34 : 22) * s;
+      const ly = y + (big ? 16 : 11) * s, gy = y + (big ? 26 : 15) * s, vy = y + (big ? 82 : 51) * s;
+      (Array.isArray(row) ? row : []).slice(0, 4).forEach((c, ci) => {
+        const x = ci * 60, w = 60, cx = x + w / 2;
+        if (!c) { if (o.dash) text("–", cx, vy, vpx, P.DIM, "center", 700); return; }
+        if (o.autoBar && !c.wave && (!c.glyph || c.glyph === "none") && c.pct != null) c = { ...c, glyph: "bar" };
+        const col = on ? cc(c, ci) : P.DIM, isHot = hotCi === ci;
+        text(fit(c.label || "", lpx, w - 4, 600), cx, ly, lpx, col, "center", 600);
+        if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, x + 5, gy, w - 10, gh, col);
+        else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
+        cellValue(c, cx, vy, w, vpx, col, isHot, o.hotCol);
+        if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + h - 2, w - 8, 2); }
+      });
+    };
+    // the title line (0-24): title left, white 13 px bold; right right-aligned 11 px grey (not on knobrow)
+    const rw = p.right && kind !== "knobrow" ? tw(p.right, 11, 600) : 0;
+    if (rw) text(p.right, 232, Y(17), 11, P.MID, "right", 600);
+    if (p.title && kind !== "knobrow") text(fit(p.title, 13, 224 - rw - (rw ? 8 : 0), 700), 8, Y(17), 13, colOf(P, p.titleCol, P.TEXT), "left", 700);
 
-    if (kind === "edit8") {
+    if (kind === "knobrow") {
+      // a layer screen: a horizontal picker band (upper 55 %) over one row of the four knobs (edit8's wide metrics)
+      const items = Array.isArray(p.items) ? p.items : [], n = items.length, sel = Math.max(0, Math.min(n - 1, Number(p.sel) || 0));
+      const col = colOf(P, p.col, P.TEXT), name = i => { const it = items[i]; return typeof it === "string" ? it : (it && it.t) || ""; };
+      const bandH = Math.round(ph * 0.55), size = 34, bigH = size * 1.1, hasVal = p.value != null && p.value !== "";
+      const labelH = p.label ? 14 : 0, stackH = bigH + 10 + (hasVal ? 18 : 0);
+      const top = py0 + labelH + (bandH - labelH - stackH) / 2, bigBase = top + bigH * 0.8, marksY = top + bigH + 4;
+      if (p.label) text(fit(p.label, 11, 224, 500), 8, py0 + 12, 11, P.DIM, "left", 500);
+      if (n) {
+        const bigW = Math.min(tw(name(sel), size, 700), 170), room = (234 - 6 - bigW) / 2 - 10;
+        if (sel > 0 && room > 24) text(fit(name(sel - 1), 13, room), 6, bigBase - 4, 13, P.DIM, "left", 500);
+        if (sel < n - 1 && room > 24) text(fit(name(sel + 1), 13, room), 234, bigBase - 4, 13, P.DIM, "right", 500);
+        squeezedText(name(sel), 120, bigBase, size, col, 170);
+        posMarks(n, sel, marksY, col);
+      }
+      if (hasVal) text(fit(String(p.value), 13, 224, 700), 120, marksY + 4 + 15, 13, col, "center", 700);
+      // the knob row, centred in the lower part (squeezed if that is under 60 px)
+      const lowTop = py0 + bandH, lowH = py0 + ph - lowTop, rs = Math.min(1, lowH / 60), rowY = lowTop + (lowH - 56 * rs) / 2;
+      const hc = p.hot != null && p.hot !== "" ? Number(p.hot) : -1;
+      cellRow(Array.isArray(p.cells) ? p.cells : [], rowY, rs, true, hc, false, { dash: true, autoBar: true, hotCol: p.hotCol ? colOf(P, p.hotCol, null) : null });
+    } else if (kind === "edit8") {
       const wide = p.wide && typeof p.wide === "object" ? p.wide : null;
       const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 2);
       if (wide) drawWide(wide, Y(24), Y(120), rows);
-      const big = !wide, rowY = wide ? [124, 184] : [30, 134], rowH = wide ? 56 : 100;
-      rows.forEach((row, ri) => {
-        const y = Y(rowY[ri]), h = rowH * ys, on = ri === act;
-        (Array.isArray(row) ? row : []).slice(0, 4).forEach((c, ci) => {
-          if (!c) return;
-          const x = ci * 60, w = 60, cx = x + w / 2, col = on ? cc(c, ci) : P.DIM, isHot = !!hot && hot[0] === ri && hot[1] === ci;
-          const lpx = big ? 12 : 10, vpx = big ? 17 : 13, gh = (big ? 34 : 22) * ys;
-          const ly = y + (big ? 16 : 11) * ys, gy = y + (big ? 26 : 15) * ys, vy = y + (big ? 82 : 51) * ys;
-          text(fit(c.label || "", lpx, w - 4, 600), cx, ly, lpx, col, "center", 600);
-          if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, x + 5, gy, w - 10, gh, col);
-          else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
-          cellValue(c, cx, vy, w, vpx, col, isHot);
-          if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + h - 2, w - 8, 2); }
-        });
-      });
+      const big = !wide, rowY = wide ? [124, 184] : [30, 134];
+      rows.forEach((row, ri) => cellRow(row, Y(rowY[ri]), ys, ri === act, hot && hot[0] === ri ? hot[1] : -1, big));
     } else {
       // stack: N (1-8) equal rows of four under column headings; a row label column when any row has a label
       const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 8), N = Math.max(1, rows.length);
@@ -995,7 +1025,7 @@ function renderScreen(scr, palName, S) {
     } else if (L.style === "dial") {
       ctx.save(); ctx.lineWidth = 3; ctx.lineCap = "butt";
       ctx.strokeStyle = P.LINE; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(229, 12, 8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-      if (pct > 0) { ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(229, 12, 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct); ctx.stroke(); }
+      if (pct > 0) { ctx.strokeStyle = col; ctx.lineWidth = L.on ? 5 : 3; ctx.beginPath(); ctx.arc(229, 12, 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct); ctx.stroke(); }
       ctx.restore();
     } else if (L.style === "mark") {
       if (L.on) { ctx.fillStyle = col; ctx.fillRect(226, 8, 8, 8); }
@@ -1370,6 +1400,7 @@ const PANEL_TEMPLATES = {
   stripes:  { kind: "stripes", bands: ["red", "white", "blue"], band: 16, gap: 8, phase: 0, title: "choralroot" },
   params:   { kind: "params", title: "Envelope", page: "ENV 1/1", cols: [{ label: "Attack", value: "0.20", glyph: "env", env: [0.2, 0.3, 0.6, 0.3] }, { label: "Decay", value: "0.30", glyph: "knob", pct: 0.3 }, { label: "Sustain", value: "60", glyph: "bar", pct: 0.6 }, { label: "Release", value: "0.30", glyph: "knob", pct: 0.3 }] },
   edit8:    { kind: "edit8", title: "WARM PAD*", right: "AMP ENV · 1/2", wide: { type: "env", a: 0.2, h: 0.0, d: 0.3, s: 0.7, r: 0.4, seg: 2 }, rows: [[{ label: "Attack", value: "0.20", glyph: "knob", pct: 0.2 }, { label: "Hold", value: "0.00", glyph: "knob", pct: 0 }, { label: "Decay", value: "0.30", glyph: "knob", pct: 0.3 }, { label: "Sustain", value: "70", glyph: "bar", pct: 0.7 }], [{ label: "Release", value: "0.40", glyph: "knob", pct: 0.4 }, { label: "Curve", value: "EXP" }, { label: "Vel", value: "50", glyph: "bar", pct: 0.5 }, null]], active: 0, hot: [0, 2] },
+  knobrow:  { kind: "knobrow", items: ["Reverb", "Chorus", "Delay", "Drive"], sel: 0, col: "green", label: "fx", cells: [{ label: "Size", value: "60", pct: 0.6 }, { label: "Damp", value: "40", pct: 0.4 }, { label: "Type", value: "Room" }, { label: "Amount", value: "25", pct: 0.25 }], hot: 1, hotCol: null, value: "" },
   stack:    { kind: "stack", title: "WARM PAD", right: "OSC · 1/1", cols: ["Wave", "Level", "Coarse", "Fine"], rows: [{ label: "OSC 1", cells: [{ value: "SAW", wave: "SAW", glyph: "wave" }, { value: "90", pct: 0.9 }, { value: "0", pct: 0.5 }, { value: "+3", pct: 0.53 }] }, { label: "OSC 2", cells: [{ value: "SQR", wave: "SQR", glyph: "wave" }, { value: "70", pct: 0.7 }, { value: "+12", pct: 0.75 }, { value: "-5", pct: 0.45 }] }], active: 0, hot: null },
   arp:      { kind: "arp", root: "A", quality: "m", sup: "7", notes: [{ t: "A4", col: "cream" }, { t: "C5", col: "cream" }, { t: "E5", col: "cream" }, { t: "G5", col: "orange" }], pos: 2, line: "Arp 1/8" },
 };
