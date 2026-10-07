@@ -1,0 +1,218 @@
+{
+ "format": "fm1-panel-design",
+ "version": 1,
+ "device": "M-VAVE FM-1",
+ "name": "ChoralRoot FM-1 sound editor",
+ "palette": "MOD",
+ "labels": {
+  "buttons": {
+   "FX": "FX",
+   "SEL": "KEY",
+   "ENV": "BASS",
+   "LFO": "LATCH",
+   "EDIT": "EDIT",
+   "GLO": "OPT",
+   "HOME": "HOME",
+   "SAVE": "SAVE",
+   "ARP": "PERF",
+   "SEQ": "METRO",
+   "PLAY": "LOOP",
+   "REC": "REC",
+   "OCT-": "OCT-",
+   "OCT+": "OCT+"
+  },
+  "encoders": {
+   "MASTER": "VOLUME",
+   "SELECT": "LANE",
+   "PRESETS": "SOUND",
+   "ALGORITHM": "BASS SND",
+   "KNOB1": "CUTOFF",
+   "KNOB2": "RESO",
+   "KNOB3": "F.TYPE",
+   "KNOB4": "ENV AMT"
+  }
+ },
+ "notes": "",
+ "states": [
+  {
+   "name": "4 \u00b7 FILT tapped: the filter, row A on the knobs, KNOB 2 (Cutoff) turning",
+   "notes": "",
+   "export": true,
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "keyLabels": {
+    "1": "DIM",
+    "3": "MIN",
+    "5": "MAJ",
+    "8": "SUS",
+    "0": "6",
+    "2": "m7",
+    "4": "M7",
+    "7": "9",
+    "6": "LOCK"
+   },
+   "keyNotes": {},
+   "buttons": {
+    "FX": 1,
+    "SEL": 2,
+    "ENV": 1,
+    "LFO": 1,
+    "EDIT": 3,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "buttonLabels": {
+    "FX": "OSC",
+    "SEL": "FILT",
+    "ENV": "ENV",
+    "LFO": "LFO",
+    "EDIT": "EDIT",
+    "GLO": "SHIFT",
+    "HOME": "HOME",
+    "SAVE": "SAVE",
+    "ARP": "PERF",
+    "SEQ": "MOD",
+    "PLAY": "FX",
+    "REC": "MIX"
+   },
+   "buttonNotes": {},
+   "encoders": {
+    "MASTER": {
+     "value": "",
+     "note": ""
+    },
+    "SELECT": {
+     "value": "",
+     "note": ""
+    },
+    "PRESETS": {
+     "value": "",
+     "note": ""
+    },
+    "ALGORITHM": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB1": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB2": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB3": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB4": {
+     "value": "",
+     "note": ""
+    }
+   },
+   "screen": {
+    "header": null,
+    "cards": null,
+    "panel": {
+     "kind": "edit8",
+     "title": "WARM PAD*",
+     "right": "FILTER",
+     "wide": {
+      "type": "filter",
+      "cut": 0.488,
+      "res": 0.08,
+      "ftype": "LP",
+      "drive": 0.0
+     },
+     "rows": [
+      [
+       {
+        "label": "Type",
+        "value": "LP",
+        "glyph": "dots",
+        "pct": 0.0
+       },
+       {
+        "label": "Cutoff",
+        "value": "643 Hz",
+        "glyph": "bar",
+        "pct": 0.488
+       },
+       {
+        "label": "Reso",
+        "value": "8%",
+        "glyph": "bar",
+        "pct": 0.08
+       },
+       {
+        "label": "Drive",
+        "value": "0%",
+        "glyph": "bar",
+        "pct": 0.0
+       }
+      ],
+      [
+       {
+        "label": "Key trk",
+        "value": "50%",
+        "glyph": "bar",
+        "pct": 0.5
+       },
+       {
+        "label": "Env amt",
+        "value": "+32",
+        "glyph": "bar",
+        "pct": 0.756,
+        "bipolar": true
+       },
+       null,
+       null
+      ]
+     ],
+     "active": 0,
+     "hot": [
+      0,
+      1
+     ]
+    },
+    "footer": null,
+    "notes": ""
+   }
+  }
+ ]
+}

@@ -1,0 +1,271 @@
+{
+ "format": "fm1-panel-design",
+ "version": 1,
+ "device": "M-VAVE FM-1",
+ "name": "ChoralRoot FM-1 sound editor",
+ "palette": "MOD",
+ "labels": {
+  "buttons": {
+   "FX": "FX",
+   "SEL": "KEY",
+   "ENV": "BASS",
+   "LFO": "LATCH",
+   "EDIT": "EDIT",
+   "GLO": "OPT",
+   "HOME": "HOME",
+   "SAVE": "SAVE",
+   "ARP": "PERF",
+   "SEQ": "METRO",
+   "PLAY": "LOOP",
+   "REC": "REC",
+   "OCT-": "OCT-",
+   "OCT+": "OCT+"
+  },
+  "encoders": {
+   "MASTER": "VOLUME",
+   "SELECT": "LANE",
+   "PRESETS": "SOUND",
+   "ALGORITHM": "BASS SND",
+   "KNOB1": "WAVE",
+   "KNOB2": "LEVEL",
+   "KNOB3": "COARSE",
+   "KNOB4": "FINE"
+  }
+ },
+ "notes": "",
+ "states": [
+  {
+   "name": "1 \u00b7 EDIT tapped: the editor on WARM PAD, the four oscillators (OSC 1 on the knobs)",
+   "notes": "",
+   "export": true,
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "keyLabels": {
+    "1": "DIM",
+    "3": "MIN",
+    "5": "MAJ",
+    "8": "SUS",
+    "0": "6",
+    "2": "m7",
+    "4": "M7",
+    "7": "9",
+    "6": "LOCK"
+   },
+   "keyNotes": {},
+   "buttons": {
+    "FX": 2,
+    "SEL": 1,
+    "ENV": 1,
+    "LFO": 1,
+    "EDIT": 3,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "buttonLabels": {
+    "FX": "OSC",
+    "SEL": "FILT",
+    "ENV": "ENV",
+    "LFO": "LFO",
+    "EDIT": "EDIT",
+    "GLO": "SHIFT",
+    "HOME": "HOME",
+    "SAVE": "SAVE",
+    "ARP": "PERF",
+    "SEQ": "MOD",
+    "PLAY": "FX",
+    "REC": "MIX"
+   },
+   "buttonNotes": {},
+   "encoders": {
+    "MASTER": {
+     "value": "",
+     "note": ""
+    },
+    "SELECT": {
+     "value": "",
+     "note": ""
+    },
+    "PRESETS": {
+     "value": "",
+     "note": ""
+    },
+    "ALGORITHM": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB1": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB2": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB3": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB4": {
+     "value": "",
+     "note": ""
+    }
+   },
+   "screen": {
+    "header": null,
+    "cards": null,
+    "panel": {
+     "kind": "stack",
+     "title": "WARM PAD",
+     "right": "OSC 1 \u00b7 A",
+     "cols": [
+      "Wave",
+      "Level",
+      "Coarse",
+      "Fine"
+     ],
+     "rows": [
+      {
+       "label": "1",
+       "cells": [
+        {
+         "label": "Wave",
+         "value": "PWM",
+         "glyph": "square",
+         "pct": 0.55
+        },
+        {
+         "label": "Level",
+         "value": "63%",
+         "glyph": "bar",
+         "pct": 0.63
+        },
+        {
+         "label": "Coarse",
+         "value": "0"
+        },
+        {
+         "label": "Fine",
+         "value": "0"
+        }
+       ]
+      },
+      {
+       "label": "2",
+       "cells": [
+        {
+         "label": "Wave",
+         "value": "SAW",
+         "glyph": "saw",
+         "pct": 0.5
+        },
+        {
+         "label": "Level",
+         "value": "48%",
+         "glyph": "bar",
+         "pct": 0.48
+        },
+        {
+         "label": "Coarse",
+         "value": "-12"
+        },
+        {
+         "label": "Fine",
+         "value": "+7"
+        }
+       ]
+      },
+      {
+       "label": "3",
+       "cells": [
+        {
+         "label": "Wave",
+         "value": "SIN",
+         "glyph": "wave",
+         "pct": 0.5
+        },
+        {
+         "label": "Level",
+         "value": "22%",
+         "glyph": "bar",
+         "pct": 0.22
+        },
+        {
+         "label": "Coarse",
+         "value": "+12"
+        },
+        {
+         "label": "Fine",
+         "value": "-5"
+        }
+       ]
+      },
+      {
+       "label": "4",
+       "cells": [
+        {
+         "label": "Wave",
+         "value": "SAW",
+         "glyph": "saw",
+         "pct": 0.5
+        },
+        {
+         "label": "Level",
+         "value": "0%",
+         "glyph": "bar",
+         "pct": 0.0
+        },
+        {
+         "label": "Coarse",
+         "value": "0"
+        },
+        {
+         "label": "Fine",
+         "value": "0"
+        }
+       ]
+      }
+     ],
+     "active": 0,
+     "hot": null
+    },
+    "footer": null,
+    "notes": ""
+   }
+  }
+ ]
+}

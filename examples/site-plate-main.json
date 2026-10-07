@@ -1,0 +1,185 @@
+{
+ "format": "fm1-panel-design",
+ "version": 1,
+ "device": "M-VAVE FM-1",
+ "name": "ChoralRoot FM-1",
+ "palette": "MOD",
+ "labels": {
+  "buttons": {
+   "FX": "FX",
+   "SEL": "KEY",
+   "ENV": "BASS",
+   "LFO": "LATCH",
+   "EDIT": "EDIT",
+   "GLO": "OPT",
+   "HOME": "HOME",
+   "SAVE": "SAVE",
+   "ARP": "PERF",
+   "SEQ": "METRO",
+   "PLAY": "LOOP",
+   "REC": "REC",
+   "OCT-": "OCT-",
+   "OCT+": "OCT+"
+  },
+  "encoders": {
+   "MASTER": "VOLUME",
+   "SELECT": "BPM",
+   "PRESETS": "SOUND",
+   "ALGORITHM": "BASS SND",
+   "KNOB1": "VOICING",
+   "KNOB2": "BASS VOICE",
+   "KNOB3": "PERFORM",
+   "KNOB4": "FX"
+  }
+ },
+ "notes": "",
+ "states": [
+  {
+   "name": "2 \u00b7 MAJ + M7 held, D4 pressed \u2192 Dmaj7",
+   "notes": "",
+   "export": true,
+   "keys": [
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "keyLabels": {
+    "1": "DIM",
+    "3": "MIN",
+    "5": "MAJ",
+    "8": "SUS",
+    "0": "6",
+    "2": "m7",
+    "4": "M7",
+    "7": "9",
+    "6": "LOCK"
+   },
+   "keyNotes": {},
+   "buttons": {
+    "FX": 1,
+    "SEL": 1,
+    "ENV": 1,
+    "LFO": 1,
+    "EDIT": 1,
+    "GLO": 1,
+    "HOME": 1,
+    "SAVE": 1,
+    "ARP": 1,
+    "SEQ": 1,
+    "PLAY": 1,
+    "REC": 1,
+    "OCT-": 1,
+    "OCT+": 1
+   },
+   "playGreen": 0,
+   "buttonLabels": {},
+   "buttonNotes": {},
+   "encoders": {
+    "MASTER": {
+     "value": "",
+     "note": ""
+    },
+    "SELECT": {
+     "value": "",
+     "note": ""
+    },
+    "PRESETS": {
+     "value": "",
+     "note": ""
+    },
+    "ALGORITHM": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB1": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB2": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB3": {
+     "value": "",
+     "note": ""
+    },
+    "KNOB4": {
+     "value": "",
+     "note": ""
+    }
+   },
+   "screen": {
+    "header": {
+     "icon": "none",
+     "bpm": "",
+     "mid": "",
+     "right": "",
+     "batt": 3,
+     "usb": false
+    },
+    "cards": null,
+    "panel": {
+     "kind": "chord",
+     "root": "D",
+     "quality": "",
+     "sup": "M7",
+     "notes": "",
+     "line": "",
+     "hint": "",
+     "cols": {
+      "root": "white",
+      "sup": "orange"
+     },
+     "bubbles": [
+      {
+       "t": "D4",
+       "col": "white",
+       "mark": false
+      },
+      {
+       "t": "F#4",
+       "col": "white",
+       "mark": false
+      },
+      {
+       "t": "A4",
+       "col": "white",
+       "mark": false
+      },
+      {
+       "t": "C#5",
+       "col": "orange",
+       "mark": true
+      }
+     ]
+    },
+    "footer": null,
+    "notes": ""
+   }
+  }
+ ]
+}
