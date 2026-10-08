@@ -151,7 +151,7 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
 | `scope` | `root quality sup amp freq` | an oscilloscope wave (React view) |
 | `text` | `title lines` | free lines; a line is `{ t, px, col: theme\|accent\|dim, center, w }` or a string |
 | `loop` | `value label pct rec layers status title right` | the loop page: a ring with the bar count inside, layer rings, a status line |
-| `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a DX7 envelope, an FM operator envelope, an FM algorithm, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
+| `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a DX7 envelope, an FM operator envelope or two side by side, an FM algorithm, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
 | `stack` | `title titleCol right cols rows active hot` | N = 1–8 equal rows of four cells under column headings (oscillators, LFOs, the 8-slot mod matrix), a row label at the left; the `active` row in the knob colours, the others grey. See **Sound editor panels** |
 
 ### Sound editor panels (`edit8`, `stack`, `knobrow`)
@@ -162,7 +162,7 @@ vertically into the remaining panel).
 
 **Shared.** The top line (y 0–24): `title` left in 13 px bold (`titleCol`, default white; a trailing
 `*` means "edited"), `right` right-aligned in 11 px grey. A **cell** is `null` (empty) or
-`{ label, value, col, glyph, pct, pct2, bipolar, env, cycles, n, wave, shape }`:
+`{ label, value, col, glyph, pct, pct2, bipolar, big, env, cycles, n, wave, shape }`:
 
 - `col` its knob colour; without it the colour is taken by column index: **blue, orange, white, green**
   (KNOB 1–4; palettes without those names fall back to theme / accent / text / mint).
@@ -195,6 +195,17 @@ vertically into the remaining panel).
   - `harm` one cycle of a wave through the box's full height (normalised): `pct` 0.5 a pure sine; toward 1
     it adds the 3rd, 5th and 7th harmonics (1/n amplitudes, scaled by (`pct` − 0.5)·2) and reads square-ish;
     toward 0 it adds the 2nd–7th (1/n, scaled by (0.5 − `pct`)·2) and reads saw-ish (FM harmonics).
+  - `detune` two sine cycles overlaid across the box (full height): the first in the cell colour, the second
+    behind it at 60 % brightness (the colour mixed 40 % toward the background) and shifted right by
+    `pct`·½ cycle — they coincide at 0 and are a half cycle apart (mirrored) at 1.
+- `glyph: "ratio"` (a fraction, no bar): `value` is a string `"B1/B2"` such as `"0.50/1.00"`; the numerator
+  (13 px bold) over a 1.5 px divider (the cell width − 14) over the denominator (13 px), centred in the
+  glyph + value space, in the cell colour (`hot`: one block behind the whole fraction, the text in the
+  background colour). A `value` without `/` is drawn as a `big` value.
+- `big: true`: a number-only cell — no glyph, no bar (even with `pct`; `knobrow` adds no auto bar): its
+  label and its `value` 7 px larger (20 px bold in a 22 px-glyph row instead of 13, 24 instead of 17 in a
+  34 px row, 20 in `knobrow`, 19 in a ringed `knobrow`), centred vertically in the glyph + value space
+  (glyph top to value baseline). For Algo and the operator ratios. (`stack` draws it as a text cell.)
 - `bipolar: true`: the bar is centre-zero, **`pct` 0.5 = zero** (0 = full negative, 1 = full positive);
   with `glyph: "bar"` the vertical bar grows up / down from the middle.
 - `wave` (optional, `SAW SQR TRI SIN PWM NOIS`, with `shape` 0–1 = PWM duty / TRI peak and `cycles`,
@@ -213,6 +224,11 @@ vertically into the remaining panel).
 - `{ "type": "filter", "cut", "res", "ftype": "LP"|"BP"|"HP"|"NOTCH", "drive", "col" }` (`cut res drive`
   0–1, cutoff on a 9-octave log axis): the response curve (3 px, orange = KNOB 2) with its resonance
   peak over a dashed 0 dB pass level; `ftype` top left, `DRIVE n` top right when `drive` > 0.
+  Optional `"bw": { "base": 0–1, "width": 0–1 }` (a base-width filter): under the curve, the window from
+  x = `base` to x = `base` + `width` (fractions of the band width, the right edge clamped to 1) lit with a
+  12 % alpha fill of the band colour between two 1.5 px dashed vertical edges in the band colour, and
+  `B` / `W` (9 px bold, band colour) under the left / right edge (nudged apart when under 12 px apart).
+  Without `bw` the band is unchanged.
 - `{ "type": "wave", "wave": "SAW"|"SQR"|"TRI"|"SIN"|"PWM"|"NOIS", "shape", "cycles", "col" }`: two
   cycles (default) across the screen (3 px, blue = KNOB 1).
 - `{ "type": "dx", "r": [r1, r2, r3, r4], "l": [l1, l2, l3, l4], "seg", "pitch", "col" }` (rates and levels 0–99,
@@ -229,6 +245,15 @@ vertically into the remaining panel).
   `seg` (0 attack, 1 decay, 2 the hold at the end level, 3 the level: a 5 px square on the peak; `null` =
   none) in `col` (as `env`: default the `hot` cell's colour, else the knob colour blue orange white green
   of `seg`).
+- `{ "type": "ade2", "a": { "a", "d", "end", "lev" }, "b": { "a", "d", "end", "lev" }, "seg", "col" }` (all
+  0–1): two operator envelopes side by side, A in x 8–112 and B in x 128–232 (a faint 1 px divider at 120),
+  each drawn as `ade` within its half less 10 px at the right (rise to `lev` over `a` = 40 % at 1, fall to
+  `end` over `d`, hold; 3 px white over the shared faint baseline), the letter `A` / `B` (10 px bold) at
+  each half's top left (no `A D E L` letters), and a **level bar** at the half's right edge: 4 px wide on a
+  faint full-height track, filled from the baseline up to `lev`. `seg` 0–3 highlights A's attack / decay /
+  end hold / level, 4–7 the same for B (`null` = none): the segment 4 px thick with end dots in the knob
+  colour of `seg % 4` (blue orange white green; `col` overrides); the level (3, 7) = the bar in green. The
+  highlighted half's letter and bar take that colour; otherwise the bar and letter are mid grey.
 - `{ "type": "algo", "algo": 1–8, "fdbk", "mix" }` (`fdbk mix` 0–1): the 4-operator FM algorithm as a box
   diagram: `ALGO` and the number at the left; four 14 px operator boxes `C A B1 B2` on a three-row grid
   (modulators of modulators on top, modulators in the middle, carriers at the bottom), 1.5 px arrows with

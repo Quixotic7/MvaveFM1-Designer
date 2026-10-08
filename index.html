@@ -276,6 +276,17 @@ const PALETTES = {
 const PAL_NAMES = Object.keys(PALETTES);
 function mix(a, b, pct) { return a.map((v, i) => Math.round(v + (b[i] - v) * pct / 100)); }
 function rgb(c) { return `rgb(${c[0]},${c[1]},${c[2]})`; }
+/* a CSS colour ("rgb(r,g,b)" or "#rgb" / "#rrggbb") as [r, g, b] (black when unparseable) */
+function cssRgb(s) {
+  s = String(s || "").trim();
+  const m = s.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i);
+  if (m) return [+m[1], +m[2], +m[3]];
+  let h = s[0] === "#" ? s.slice(1) : "";
+  if (h.length === 3) h = h.split("").map(ch => ch + ch).join("");
+  return h.length >= 6 ? [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) || 0) : [0, 0, 0];
+}
+/* CSS colour a mixed toward CSS colour b by f (0 = a, 1 = b) */
+function mixCss(a, b, f) { return rgb(mix(cssRgb(a), cssRgb(b), f * 100)); }
 function palette(name) {
   const p = PALETTES[name] || PALETTES.GREEN;
   return { name, BG: rgb(p.bg), SURF: rgb(p.surf), TEXT: rgb(p.text), THEME: rgb(p.theme), ACCENT: rgb(p.accent),
@@ -508,10 +519,10 @@ function renderScreen(scr, palName, S) {
   const px0 = 10, pw = 220, py0 = Y_PANEL, ph = H_PANEL;
   const title = () => { let y = py0 + 16; if (p.title) { text(p.title, px0, y, 15, P.THEME, "left", 600); if (p.subtitle) text(fit(p.subtitle, 11, pw - tw(p.title, 15, 600) - 8), px0 + tw(p.title, 15, 600) + 6, y, 11, P.MID); y += 8; } return y; };
 
-  /* the parameter pictograms (room echoes moon lfo clip spring mix gate range arrow shift harm): flat 2 px strokes
+  /* the parameter pictograms (room echoes moon lfo clip spring mix gate range arrow shift harm detune): flat 2 px strokes
      in col, filled parts in col; pct the main value, pct2 (c.pct2, default 0.5) a second one; u = glyph units
      per screen pixel (the caller's scale), so strokes and pixel sizes stay true when the box is scaled */
-  const PICTO = new Set(["room", "echoes", "moon", "lfo", "clip", "spring", "mix", "gate", "range", "arrow", "shift", "harm"]);
+  const PICTO = new Set(["room", "echoes", "moon", "lfo", "clip", "spring", "mix", "gate", "range", "arrow", "shift", "harm", "detune"]);
   function drawPicto(g, c, x, y, w, h, col, pct, u) {
     const lw = 2 * u, m = lw, x0 = x + m, x1 = x + w - m, y0 = y + m, y1 = y + h - m, W = x1 - x0, H = y1 - y0;
     const cx = x + w / 2, cy = y + h / 2, pct2 = Math.max(0, Math.min(1, Number(c.pct2 ?? 0.5) || 0));
@@ -582,6 +593,11 @@ function renderScreen(scr, palName, S) {
         vs.push(v); }
       const mx = Math.max(1e-6, ...vs.map(Math.abs));
       line(vs.map((v, i) => [x0 + (i / n) * W, cy - (v / mx) * (H / 2)]));
+    } else if (g === "detune") {   // two sine cycles, the second (60 % bright, behind) shifted by pct * half a cycle
+      const n = Math.max(48, Math.ceil(W / u)), sh = pct * Math.PI;
+      const sine = ph => { const pts = []; for (let i = 0; i <= n; i++) { const t = i / n; pts.push([x0 + t * W, cy - Math.sin(t * Math.PI * 2 - ph) * (H / 2)]); } return pts; };
+      ctx.strokeStyle = mixCss(col, P.BG, 0.4); line(sine(sh));
+      ctx.strokeStyle = col; line(sine(0));
     }
     ctx.restore();
   }
@@ -916,7 +932,7 @@ function renderScreen(scr, palName, S) {
     };
     // a cell glyph: a wave shape (cell.wave) or a params glyph scaled into a w x h box
     const cellGlyph = (c, x, y, w, h, col) => {
-      if (c.glyph === "none" || (!c.glyph && !c.wave)) return;
+      if (c.glyph === "none" || c.glyph === "ratio" || (!c.glyph && !c.wave)) return;
       if (c.wave) { waveShape(x, y, w, h, c.wave, c.shape ?? 0.5, c.cycles || 1, col, 2); return; }
       if (c.bipolar && c.glyph === "bar") {   // centre-zero vertical bar: pct 0.5 = zero
         const bw = Math.min(14, w * 0.4), bx = x + w / 2 - bw / 2, m = y + h / 2, v = (clamp01(c.pct ?? 0.5) - 0.5) * h;
@@ -954,12 +970,26 @@ function renderScreen(scr, palName, S) {
       (Array.isArray(row) ? row : []).slice(0, 4).forEach((c, ci) => {
         const x = cx0 + ci * cw, w = cw, cx = x + w / 2;
         if (!c) { if (o.dash) text("–", cx, vy, vpx, P.DIM, "center", 700); return; }
-        if (o.autoBar && !c.wave && (!c.glyph || c.glyph === "none") && c.pct != null) c = { ...c, glyph: "bar" };
+        const ratio = c.glyph === "ratio" && String(c.value ?? "").includes("/");
+        const bigV = !ratio && (!!c.big || c.glyph === "ratio");   // a number-only cell (no glyph, no bar)
+        if (o.autoBar && !bigV && !ratio && !c.wave && (!c.glyph || c.glyph === "none") && c.pct != null) c = { ...c, glyph: "bar" };
         const lit = on && !c.dim, col = lit ? cc(c, ci) : P.DIM, isHot = hotCi === ci;   // c.dim: inactive grey
         text(fit(c.label || "", lpx, w - 4, 600), cx, ly, lpx, col, "center", 600);
-        if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, cx - gw / 2, gy, gw, gh, col);
-        else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
-        cellValue(c, cx, vy, w, vpx, col, isHot, o.hotCol);
+        const mid = (gy + vy) / 2;   // the centre of the glyph + value space (glyph top .. value baseline)
+        if (ratio) {   // a fraction: numerator 13 bold over a 1.5 px divider over the denominator 13
+          const [nu, de] = String(c.value).split("/").map(t => t.trim()), fpx = 13, dw = w - 14;
+          if (isHot) rr(cx - w / 2 + 3, mid - fpx - 5, w - 6, 2 * fpx + 10, 2, o.hotCol || col);
+          const tc = isHot ? P.BG : col;
+          text(fit(nu, fpx, dw, 700), cx, mid - 4, fpx, tc, "center", 700);
+          ctx.fillStyle = tc; ctx.fillRect(cx - dw / 2, mid - 0.75, dw, 1.5);
+          text(fit(de, fpx, dw, 600), cx, mid + fpx + 2, fpx, tc, "center", 600);
+        } else if (bigV) {   // the value 7 px larger, vertically centred where glyph and value would be
+          cellValue(c, cx, mid + (vpx + 7) * 0.36, w, vpx + 7, col, isHot, o.hotCol);
+        } else {
+          if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, cx - gw / 2, gy, gw, gh, col);
+          else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
+          cellValue(c, cx, vy, w, vpx, col, isHot, o.hotCol);
+        }
         if (lit) { ctx.fillStyle = col; ctx.fillRect(x + (RG ? 3 : 4), y + h - 2, w - (RG ? 6 : 8), 2); }
       });
     };
@@ -1060,7 +1090,18 @@ function renderScreen(scr, palName, S) {
         const cut = clamp01(wd.cut ?? 0.5), res = clamp01(wd.res ?? 0), drive = clamp01(wd.drive ?? 0), ft = String(wd.ftype || "LP").toUpperCase();
         const Q = 0.6 + res * 7, y0db = y0 + 38 * kk, k = 1.4 * kk, yMin = y0 + 4 * kk, yMax = y0 + 90 * kk;
         ctx.strokeStyle = P.MID; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(L, y0db); ctx.lineTo(R, y0db); ctx.stroke(); ctx.setLineDash([]);
-        ctx.strokeStyle = colOf(P, wd.col, KC[1]); ctx.lineWidth = 3; ctx.beginPath();
+        const fcol = colOf(P, wd.col, KC[1]);
+        if (wd.bw && typeof wd.bw === "object") {   // the base-width window: a faint lit region between two dashed edges
+          const b = clamp01(wd.bw.base ?? 0), e = Math.min(1, b + clamp01(wd.bw.width ?? 0)), bx = L + b * W, ex = L + e * W;
+          ctx.save(); ctx.globalAlpha = 0.12; ctx.fillStyle = fcol; ctx.fillRect(bx, yMin, ex - bx, yMax - yMin); ctx.restore();
+          ctx.strokeStyle = fcol; ctx.lineWidth = 1.5; ctx.lineCap = "butt"; ctx.setLineDash([3, 3]);
+          [bx, ex].forEach(xx => { ctx.beginPath(); ctx.moveTo(xx, yMin); ctx.lineTo(xx, yMax); ctx.stroke(); });
+          ctx.setLineDash([]); ctx.lineCap = "round";
+          const ly = y0 + 96 * kk, close = ex - bx < 12;
+          text("B", Math.max(L + 3, bx - (close ? 5 : 0)), ly, 9, fcol, "center", 700);
+          text("W", Math.min(R - 4, ex + (close ? 5 : 0)), ly, 9, fcol, "center", 700);
+        }
+        ctx.strokeStyle = fcol; ctx.lineWidth = 3; ctx.beginPath();
         for (let i = 0; i <= W; i++) {
           const w = Math.pow(2, (i / W - cut) * 9), den = Math.sqrt((1 - w * w) ** 2 + (w / Q) ** 2);
           let g = ft === "HP" ? w * w / den : ft === "BP" ? (w / Q) / den * Math.sqrt(Q / 0.6) : ft === "NOTCH" ? Math.abs(1 - w * w) / den : 1 / den;
@@ -1094,6 +1135,30 @@ function renderScreen(scr, palName, S) {
         text("D", Math.min(dx, R - 14), ly, 9, seg === 1 ? segCol : P.DIM, "center", 700);
         text("E", R - 4, ly, 9, seg === 2 ? segCol : P.DIM, "center", 700);
         text("L", Math.max(L + 3, xA), yP - 6, 8, seg === 3 ? segCol : P.DIM, "center", 700);
+      } else if (wd.type === "ade2") {
+        // two operator envelopes side by side: A in x 8-112, B in x 128-232, each with a level bar at its right
+        const seg = wd.seg == null ? -1 : Math.round(Number(wd.seg));
+        const yT = y0 + 18 * kk, yB = y0 + 84 * kk;
+        ctx.fillStyle = P.LINE; ctx.fillRect(L, yB + 1, W, 1);
+        [["A", wd.a, 8, 112], ["B", wd.b, 128, 232]].forEach(([nm, e, hx0, hx1], hi) => {
+          e = e && typeof e === "object" ? e : {};
+          const a = clamp01(e.a ?? 0.2), d = clamp01(e.d ?? 0.4), lev = clamp01(e.lev ?? 1), end = clamp01(e.end ?? 0);
+          const s = seg >= hi * 4 && seg < hi * 4 + 4 ? seg - hi * 4 : -1, segCol = wd.col ? colOf(P, wd.col, KC[0]) : KC[s >= 0 ? s : 0];
+          const barX = hx1 - 4, ex1 = barX - 6, EW = ex1 - hx0;   // the envelope's room, the bar 4 px at the right edge
+          const yP = yB - (yB - yT) * lev, yE = yB - (yB - yT) * end;
+          const xA = hx0 + 0.4 * EW * a, xD = xA + 0.4 * EW * d, pts = [[hx0, yB], [xA, yP], [xD, yE], [ex1, yE]];
+          ctx.strokeStyle = P.TEXT; ctx.lineWidth = 3; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+          if (s >= 0 && s <= 2) {   // 0 attack, 1 decay, 2 the hold at the end level
+            ctx.strokeStyle = segCol; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(pts[s][0], pts[s][1]); ctx.lineTo(pts[s + 1][0], pts[s + 1][1]); ctx.stroke();
+            [pts[s], pts[s + 1]].forEach(q => { ctx.fillStyle = segCol; ctx.beginPath(); ctx.arc(q[0], q[1], 3.5, 0, Math.PI * 2); ctx.fill(); });
+          }
+          // the level bar: a faint track, filled from the baseline to lev (the highlight colour when this half is
+          // highlighted, green for seg 3, else the mid grey)
+          ctx.fillStyle = P.LINE; ctx.fillRect(barX, yT, 4, yB - yT);
+          ctx.fillStyle = s >= 0 ? segCol : P.MID; ctx.fillRect(barX, yP, 4, yB - yP);
+          text(nm, hx0, y0 + 10 * kk, 10, s >= 0 ? segCol : P.MID, "left", 700);
+        });
+        ctx.fillStyle = P.LINE; ctx.fillRect(119.5, y0 + 4 * kk, 1, yB - y0 - 4 * kk);   // the divider between the halves
       } else if (wd.type === "algo") {
         drawAlgo(wd, y0, kk, L, R);
       }
