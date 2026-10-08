@@ -926,26 +926,28 @@ function renderScreen(scr, palName, S) {
     const cc = (c, i) => colOf(P, c && c.col, KC[i % 4]);
     const clamp01 = v => Math.max(0, Math.min(1, Number(v) || 0));
     const hot = Array.isArray(p.hot) && p.hot.length === 2 ? p.hot.map(Number) : null, act = Number(p.active ?? 0);
-    // the Digitone's eight algorithms for the `algo` band (our documented model; correct the routings here).
-    // Operators C A B1 B2; mod: [source, target] arrows; fb: the feedback operator; X / Y: the carriers summed
-    // into each output; pos: [row 0 top .. 2 bottom (carriers), x as a fraction of the diagram's width]
+    // the Digitone's eight algorithms for the `algo` band, as the manual's Appendix A.3 diagram draws them (the
+    // firmware's CR_ALGOS, cr_draw.c, is the same table). Operators C A B1 B2; mod: [source, target] arrows; fb: the
+    // feedback operator; X / Y: the carriers summed into each output, the first the one its label sits under;
+    // dir: the direct carriers (full level: a dotted line; the others enveloped: solid); side: the carriers whose
+    // line leaves the box's right side; rows: 3 or 4; pos: [row 0 top, column 0..2]
     const ALGOS = {
-      1: { mod: [["A", "C"], ["B1", "A"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["C"],
-           pos: { C: [2, 0.4], A: [1, 0.4], B1: [0, 0.4], B2: [0, 0.75] } },
-      2: { mod: [["A", "C"], ["B1", "C"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["C"],
-           pos: { C: [2, 0.45], A: [1, 0.2], B1: [1, 0.7], B2: [0, 0.7] } },
-      3: { mod: [["A", "C"], ["B1", "A"], ["B2", "A"]], fb: "B2", X: ["C"], Y: ["C"],
-           pos: { C: [2, 0.45], A: [1, 0.45], B1: [0, 0.2], B2: [0, 0.7] } },
-      4: { mod: [["A", "C"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["B1"],
-           pos: { C: [2, 0.25], A: [1, 0.25], B1: [2, 0.7], B2: [1, 0.7] } },
-      5: { mod: [["A", "C"], ["B1", "A"]], fb: "B2", X: ["C"], Y: ["B2"],
-           pos: { C: [2, 0.25], A: [1, 0.25], B1: [0, 0.25], B2: [2, 0.7] } },
-      6: { mod: [["A", "C"], ["A", "B1"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["B1"],
-           pos: { C: [2, 0.25], A: [1, 0.25], B1: [2, 0.7], B2: [1, 0.7] } },
-      7: { mod: [["B2", "B1"]], fb: "A", X: ["C", "A"], Y: ["B1"],
-           pos: { C: [2, 0.1], A: [2, 0.4], B1: [2, 0.75], B2: [1, 0.75] } },
-      8: { mod: [], fb: "B2", X: ["C", "A"], Y: ["B1", "B2"],
-           pos: { C: [2, 0.05], A: [2, 0.3], B1: [2, 0.6], B2: [2, 0.85] } },
+      1: { mod: [["A", "C"], ["B2", "B1"], ["B1", "C"]], fb: "A", X: ["C"], Y: ["B1"], dir: ["C", "B1"], side: [], rows: 3,
+           pos: { C: [2, 0], A: [1, 0], B1: [1, 1], B2: [0, 1] } },
+      2: { mod: [["A", "C"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["B1"], dir: ["C", "B1"], side: [], rows: 3,
+           pos: { C: [2, 0], A: [1, 0], B1: [2, 1], B2: [1, 1] } },
+      3: { mod: [["A", "C"], ["A", "B2"], ["A", "B1"]], fb: "A", X: ["C", "B2"], Y: ["B1"], dir: ["C", "B2", "B1"], side: [], rows: 3,
+           pos: { C: [2, 0], A: [1, 1], B1: [2, 2], B2: [2, 1] } },
+      4: { mod: [["B2", "B1"], ["B1", "A"], ["A", "C"]], fb: "B2", X: ["C"], Y: ["B1"], dir: ["C", "B1"], side: ["B1"], rows: 4,
+           pos: { C: [3, 0], A: [2, 0], B1: [1, 0], B2: [0, 0] } },
+      5: { mod: [["B1", "A"], ["B2", "A"], ["A", "C"]], fb: "B1", X: ["C"], Y: ["A"], dir: ["C", "A"], side: ["A"], rows: 3,
+           pos: { C: [2, 0], A: [1, 0], B1: [0, 0], B2: [0, 1] } },
+      6: { mod: [["A", "C"], ["A", "B1"], ["B2", "C"], ["B2", "B1"]], fb: "A", X: ["C"], Y: ["B1"], dir: ["C", "B1"], side: [], rows: 3,
+           pos: { C: [2, 0], A: [1, 0], B1: [2, 1], B2: [1, 1] } },
+      7: { mod: [["A", "C"], ["B2", "B1"]], fb: "A", X: ["C", "A"], Y: ["B1", "B2"], dir: ["C"], side: ["A", "B2"], rows: 3,
+           pos: { C: [2, 0], A: [1, 0], B1: [2, 1], B2: [1, 1] } },
+      8: { mod: [["A", "C"]], fb: "B1", X: ["C", "B2"], Y: ["B1"], dir: ["C"], side: [], rows: 3,
+           pos: { C: [2, 0], A: [1, 0], B1: [2, 2], B2: [2, 1] } },
     };
     // a cell glyph: a wave shape (cell.wave) or a params glyph scaled into a w x h box
     const cellGlyph = (c, x, y, w, h, col) => {
@@ -1129,7 +1131,10 @@ function renderScreen(scr, palName, S) {
         ctx.strokeStyle = fcol; ctx.lineWidth = 3; ctx.beginPath();
         for (let i = 0; i <= W; i++) {
           const w = Math.pow(2, (i / W - cut) * 9), den = Math.sqrt((1 - w * w) ** 2 + (w / Q) ** 2);
-          let g = ft === "HP" ? w * w / den : ft === "BP" ? (w / Q) / den * Math.sqrt(Q / 0.6) : ft === "NOTCH" ? Math.abs(1 - w * w) / den : 1 / den;
+          // (QUAD's types: OFF flat, "LP12" / "HP12" the 12 dB LP / HP, "LP24" twice the slope)
+          const f2 = ft.replace(/(12|24)$/, "");
+          let g = f2 === "HP" ? w * w / den : f2 === "BP" ? (w / Q) / den * Math.sqrt(Q / 0.6) : f2 === "NOTCH" ? Math.abs(1 - w * w) / den : 1 / den;
+          if (ft === "OFF") g = 1; else if (ft.endsWith("24")) g = g * g;
           const db = 20 * Math.log10(Math.max(g, 1e-4)) + drive * 6, yy = Math.max(yMin, Math.min(yMax, y0db - db * k));
           i ? ctx.lineTo(L + i, yy) : ctx.moveTo(L + i, yy);
         }
@@ -1190,48 +1195,60 @@ function renderScreen(scr, palName, S) {
       ctx.lineJoin = "miter"; ctx.lineCap = "butt";
     }
 
-    // an algo band (ALGOS is defined with the editor's constants above)
+    // an algo band (ALGOS is defined with the editor's constants above; the geometry is cr_draw.c's cr_algo_geom)
     function drawAlgo(wd, y0, kk, L, R) {
       const n = Math.min(8, Math.max(1, Math.round(Number(wd.algo) || 1))), al = ALGOS[n];
       const fb = clamp01(wd.fdbk ?? 0), mix = clamp01(wd.mix ?? 0.5);
-      const DX0 = L + 52, DW = R - 18 - DX0, hs = 7 * Math.min(1, kk), rowY = [13, 37, 61].map(v => y0 + v * kk);
-      const at = op => [DX0 + al.pos[op][1] * DW, rowY[al.pos[op][0]]];
+      const hs = 7 * Math.min(1, kk), COL = 32, SIDE = 15, OPS = ["C", "A", "B1", "B2"];
+      const rowY = (al.rows === 4 ? [11, 30, 49, 68] : [13, 37, 61]).map(v => y0 + v * kk);
+      let mn = Infinity, mx = -Infinity;
+      OPS.forEach(op => { const x = al.pos[op][1] * COL; mn = Math.min(mn, x - hs); mx = Math.max(mx, x + (al.side.includes(op) ? SIDE + 1 : hs)); });
+      const off = L + 129 - (mn + mx) / 2;   // the diagram centred on x 137
+      const at = op => [off + al.pos[op][1] * COL, rowY[al.pos[op][0]]];
+      const sideX = op => at(op)[0] + (al.side.includes(op) ? SIDE : 0);
       text("ALGO", L, y0 + 12 * kk, 10, P.MID, "left", 700);
       text(String(n), L, y0 + 40 * kk, 24, P.TEXT, "left", 700);
       ctx.lineCap = "round"; ctx.lineJoin = "round";
-      // modulation arrows, box edge to box edge
+      // modulation arrows, box edge to box edge (a shorter head in a short gap)
       ctx.strokeStyle = P.MID; ctx.fillStyle = P.MID; ctx.lineWidth = 1.5;
       al.mod.forEach(([s, t]) => {
         const [sx, sy] = at(s), [tx, ty] = at(t), dx = tx - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
-        const e = hs / Math.max(Math.abs(ux), Math.abs(uy)) + 1, ax = sx + ux * e, ay = sy + uy * e, bx = tx - ux * e, by = ty - uy * e;
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx - ux * 3, by - uy * 3); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - ux * 4.5 - uy * 2.5, by - uy * 4.5 + ux * 2.5); ctx.lineTo(bx - ux * 4.5 + uy * 2.5, by - uy * 4.5 - ux * 2.5); ctx.closePath(); ctx.fill();
+        const e = hs / Math.max(Math.abs(ux), Math.abs(uy)) + 1, gap = len - 2 * e, hl = Math.min(4.5, Math.max(2, gap));
+        const ax = sx + ux * e, ay = sy + uy * e, bx = tx - ux * e, by = ty - uy * e;
+        if (gap > hl) { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx - ux * (hl - 1.5), by - uy * (hl - 1.5)); ctx.stroke(); }
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - ux * hl - uy * 2.5, by - uy * hl + ux * 2.5); ctx.lineTo(bx - ux * hl + uy * 2.5, by - uy * hl - ux * 2.5); ctx.closePath(); ctx.fill();
       });
-      // outputs: each carrier down to a bus, a stub to its label; X and Y side by side when they share carriers
-      const xs = ops => ops.map(o => at(o)[0]), mean = a => a.reduce((p, q) => p + q, 0) / a.length;
-      let lx = mean(xs(al.X)), ly = mean(xs(al.Y));
-      if (Math.abs(lx - ly) < 16) { const m = (lx + ly) / 2; lx = m - 12; ly = m + 12; }
-      const busY = y0 + 76 * kk, labY = y0 + 92 * kk, strong = mix > 0.5 ? "Y" : mix < 0.5 ? "X" : "XY";
-      [["X", al.X, lx], ["Y", al.Y, ly]].forEach(([nm, ops, x]) => {
-        const col = strong.includes(nm) ? P.TEXT : P.DIM, cxs = xs(ops);
+      // outputs: the label under its first carrier (or its side line); a direct carrier's line dotted, an
+      // enveloped one solid; a second carrier down to the label's middle, then across to its side
+      const labY = y0 + 92 * kk, strong = mix > 0.5 ? "Y" : mix < 0.5 ? "X" : "XY";
+      [["X", al.X], ["Y", al.Y]].forEach(([nm, ops]) => {
+        const col = strong.includes(nm) ? P.TEXT : P.DIM, lx = sideX(ops[0]);
         ctx.strokeStyle = col; ctx.lineWidth = 1.5;
-        cxs.forEach(cx => { ctx.beginPath(); ctx.moveTo(cx, rowY[2] + hs + 1); ctx.lineTo(cx, busY); ctx.stroke(); });
-        ctx.beginPath(); ctx.moveTo(Math.min(x, ...cxs), busY); ctx.lineTo(Math.max(x, ...cxs), busY); ctx.moveTo(x, busY); ctx.lineTo(x, labY - 10); ctx.stroke();
-        text(nm, x, labY, 11, col, "center", 700);
+        ops.forEach((op, i) => {
+          const [x, y] = at(op), sx = sideX(op);
+          ctx.setLineDash(al.dir.includes(op) ? [1.5, 2] : []);
+          ctx.lineCap = al.dir.includes(op) ? "butt" : "round";
+          ctx.beginPath();
+          if (sx !== x) { ctx.moveTo(x + hs + 1, y); ctx.lineTo(sx, y); } else ctx.moveTo(x, y + hs + 1);
+          if (i === 0) ctx.lineTo(sx, labY - 10);
+          else { ctx.lineTo(sx, labY - 4); ctx.lineTo(sx > lx ? lx + 6 : lx - 6, labY - 4); }
+          ctx.stroke();
+        });
+        ctx.setLineDash([]); ctx.lineCap = "round";
+        text(nm, lx, labY, 11, col, "center", 700);
       });
       // the boxes
-      ["C", "A", "B1", "B2"].forEach(op => {
+      OPS.forEach(op => {
         const [x, y] = at(op);
         ctx.fillStyle = P.BG; ctx.fillRect(x - hs, y - hs, 2 * hs, 2 * hs);
         ctx.strokeStyle = P.TEXT; ctx.lineWidth = 1.5; ctx.strokeRect(x - hs, y - hs, 2 * hs, 2 * hs);
         text(op, x, y + 3.2, 9, P.TEXT, "center", 700);
       });
-      // the feedback loop on the right of its operator, thicker with fdbk
-      { const [x, y] = at(al.fb), r = 5, lcx = x + hs + 1;
-        ctx.strokeStyle = P.TEXT; ctx.fillStyle = P.TEXT; ctx.lineWidth = 1 + 2 * fb;
-        ctx.beginPath(); ctx.arc(lcx, y, r, -Math.PI / 2, Math.PI / 2); ctx.stroke();
-        const ey = y + r;   // the arrowhead at the lower end, pointing back into the box
-        ctx.beginPath(); ctx.moveTo(x + hs + 0.5, ey); ctx.lineTo(x + hs + 5, ey - 3); ctx.lineTo(x + hs + 5, ey + 3); ctx.closePath(); ctx.fill(); }
+      // the feedback loop over its operator's top left (as the manual's), thicker with fdbk
+      { const [x, y] = at(al.fb), l = x - hs, t = y - hs, w = 1 + 2 * fb, ty = Math.max(y0 + w / 2, t - 3);
+        ctx.strokeStyle = P.TEXT; ctx.fillStyle = P.TEXT; ctx.lineWidth = w;
+        ctx.beginPath(); ctx.moveTo(x - 2, t - 1); ctx.lineTo(x - 2, ty); ctx.lineTo(l - 4, ty); ctx.lineTo(l - 4, y - 3); ctx.lineTo(l - 2, y - 3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(l, y - 3); ctx.lineTo(l - 3, y - 6); ctx.lineTo(l - 3, y); ctx.closePath(); ctx.fill(); }
     }
   } else if (kind === "text") {
     let y = title();

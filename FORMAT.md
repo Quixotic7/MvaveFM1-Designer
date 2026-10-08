@@ -207,7 +207,8 @@ vertically into the remaining panel).
     the wave is started `pct` of a cycle later (`pct` 0.25 = the wave as it is a quarter cycle in). A short
     vertical tick at the box's left edge, at the starting level, marks the start point. (With
     `glyph: "lfowave"` the `wave` field names the LFO shape; it is not the oscillator `wave` below.)
-- `glyph: "ratio"` (a fraction, no bar): `value` is a string `"B1/B2"` such as `"0.50/1.00"`; the numerator
+- `glyph: "ratio"` (a fraction, no bar): `value` is a string `"top/bottom"` such as `"0.50/1.00"` (FM TONE's
+  Ratio B: `"B2/B1"`, the fast hand B2 on top); the numerator
   (13 px bold) over a 1.5 px divider (the cell width − 14) over the denominator (13 px), centred in the
   glyph + value space, in the cell colour (`hot`: one block behind the whole fraction, the text in the
   background colour). A `value` without `/` is drawn as a `big` value.
@@ -238,7 +239,8 @@ vertically into the remaining panel).
   over a faint baseline, the sustain a flat run; segment `seg` (0 A, 1 H, 2 D, 3 S, 4 R; `null` = none)
   thicker in `col` (default: the colour of the `hot` cell, else the knob colour of column `seg % 4`),
   segment letters A H D S R under the baseline.
-- `{ "type": "filter", "cut", "res", "ftype": "LP"|"BP"|"HP"|"NOTCH", "drive", "col" }` (`cut res drive`
+- `{ "type": "filter", "cut", "res", "ftype": "LP"|"BP"|"HP"|"NOTCH"|"OFF"|"LP12"|"HP12"|"LP24", "drive", "col" }`
+  (QUAD's types: `OFF` a flat line, `LP12` / `HP12` the 12 dB LP / HP, `LP24` twice the slope) (`cut res drive`
   0–1, cutoff on a 9-octave log axis): the response curve (3 px, orange = KNOB 2) with its resonance
   peak over a dashed 0 dB pass level; `ftype` top left, `DRIVE n` top right when `drive` > 0.
   Optional `"bw": { "base": 0–1, "width": 0–1 }` (a base-width filter): under the curve, the window from
@@ -271,17 +273,19 @@ vertically into the remaining panel).
   end hold / level, 4–7 the same for B (`null` = none): the segment 4 px thick with end dots in the knob
   colour of `seg % 4` (blue orange white green; `col` overrides); the level (3, 7) = the bar in green. The
   highlighted half's letter and bar take that colour; otherwise the bar and letter are mid grey.
-- `{ "type": "algo", "algo": 1–8, "fdbk", "mix" }` (`fdbk mix` 0–1): the 4-operator FM algorithm as a box
-  diagram: `ALGO` and the number at the left; four 14 px operator boxes `C A B1 B2` on a three-row grid
-  (modulators of modulators on top, modulators in the middle, carriers at the bottom), 1.5 px arrows with
-  arrowheads from modulator to target (two arrows where one operator modulates two), the feedback operator
-  with a loop arrow on its right (stroke 1 + 2·`fdbk` px); each carrier drops to a bus over the output label
-  `X` or `Y` (both drawn; the stronger by `mix` — X at 1 − `mix`, Y at `mix` — in the text colour, the other
-  dim; equal at 0.5). The routings (index.html `ALGOS`, our documented model of the Digitone's):
-  1 C←A←B1←B2, X = Y = C · 2 C←A, C←B1←B2, X = Y = C · 3 C←A←B1, A←B2, X = Y = C ·
-  4 C←A, B1←B2, X = C, Y = B1 · 5 C←A←B1, B2 alone, X = C, Y = B2 · 6 C←A, B1←A, B1←B2, X = C, Y = B1 ·
-  7 C, A, B1←B2, X = C + A, Y = B1 (A has the feedback) · 8 four carriers, X = C + A, Y = B1 + B2;
-  the feedback is on B2 except in 7.
+- `{ "type": "algo", "algo": 1–8, "fdbk", "mix" }` (`fdbk mix` 0–1): the 4-operator FM algorithm as the
+  Digitone manual's diagram draws it (Appendix A.3): `ALGO` and the number at the left; four 14 px operator
+  boxes `C A B1 B2` on a three-row grid (four rows for algorithm 4's stack), 32 px columns, the diagram
+  centred at x 137; 1.5 px arrows with arrowheads from modulator to target; the feedback operator with a
+  square loop over its top left (stroke 1 + 2·`fdbk` px); each carrier's line runs to its output label `X`
+  or `Y` — **dotted for a direct carrier** (full level, unaffected by its operator envelope), **solid for
+  an enveloped one**; a carrier with an operator below it leaves from its box's right side; a second carrier
+  on one output joins at the label's side (both labels drawn; the stronger by `mix` — X at 1 − `mix`, Y at
+  `mix` — in the text colour, the other dim; equal at 0.5). The routings (index.html `ALGOS`, the firmware's
+  `CR_ALGOS`): 1 A(fb)→C, B2→B1→C, X C, Y B1 · 2 A→C, B2(fb)→B1, X C, Y B1 · 3 A(fb)→C, B2, B1, X C + B2,
+  Y B1 · 4 B2(fb)→B1→A→C, X C, Y B1 · 5 B1(fb)→A, B2→A, A→C, X C, Y A · 6 A(fb)→C, B1; B2→C, B1, X C,
+  Y B1 · 7 A(fb)→C, B2→B1, X C + A, Y B1 + B2 (A, B1, B2 enveloped) · 8 A→C, B1(fb), X C + B2, Y B1
+  (B2, B1 enveloped); C is always direct.
 - `null` / omitted: no band, the rows get the room and larger glyphs.
 
 **`knobrow`** (a layer screen, drawn in the normal panel under the header, which carries the layer name;
