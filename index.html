@@ -522,7 +522,7 @@ function renderScreen(scr, palName, S) {
   /* the parameter pictograms (room echoes moon lfo clip spring mix gate range arrow shift harm detune): flat 2 px strokes
      in col, filled parts in col; pct the main value, pct2 (c.pct2, default 0.5) a second one; u = glyph units
      per screen pixel (the caller's scale), so strokes and pixel sizes stay true when the box is scaled */
-  const PICTO = new Set(["room", "echoes", "moon", "lfo", "clip", "spring", "mix", "gate", "range", "arrow", "shift", "harm", "detune"]);
+  const PICTO = new Set(["room", "echoes", "moon", "lfo", "clip", "spring", "mix", "gate", "range", "arrow", "shift", "harm", "detune", "lfowave"]);
   function drawPicto(g, c, x, y, w, h, col, pct, u) {
     const lw = 2 * u, m = lw, x0 = x + m, x1 = x + w - m, y0 = y + m, y1 = y + h - m, W = x1 - x0, H = y1 - y0;
     const cx = x + w / 2, cy = y + h / 2, pct2 = Math.max(0, Math.min(1, Number(c.pct2 ?? 0.5) || 0));
@@ -598,6 +598,18 @@ function renderScreen(scr, palName, S) {
       const skip = i => pct > 0.7 ? i % 2 === 1 : pct > 0.3 ? i % 3 === 2 : false;
       for (let i = 0; i < n; i++) { if (skip(i)) continue;
         line([[x0 + W * i / n, cy + jit(i) * a], [x0 + W * (i + 1) / n, cy + jit(i + 1) * a]]); }
+    } else if (g === "lfowave") {   // one LFO cycle (two in a span-2 box) of c.wave, started pct of a cycle later; a tick marks the start
+      const wv = String(c.wave || "sine").toLowerCase(), E = Math.exp(-5), cyc = Number(c.span) >= 2 ? 2 : 1;
+      const rnd = k => (Math.abs(Math.sin(k * 12.9898 + 4.1) * 43758.5453) % 1) * 2 - 1;   // fixed steps, reproducible
+      const f = t => wv === "tri" ? (t < 0.25 ? 4 * t : t < 0.75 ? 2 - 4 * t : 4 * t - 4)
+        : wv === "square" ? (t < 0.5 ? 1 : -1) : wv === "saw" ? 2 * t - 1 : wv === "ramp" ? 1 - 2 * t
+        : wv === "exp" ? 2 * (Math.exp(-5 * t) - E) / (1 - E) - 1 : wv === "random" ? rnd(Math.floor(t * 8))
+        : Math.sin(t * Math.PI * 2);
+      const tk = 4 * u, wx0 = x0 + tk, WW = x1 - wx0, n = Math.max(64, Math.ceil(WW / u) * 4), pts = [];
+      for (let i = 0; i <= n; i++) { const p = (i / n) * cyc + pct, t = i === n && Math.abs(p - Math.round(p)) < 1e-9 ? 1 - 1e-9 : p - Math.floor(p);
+        pts.push([wx0 + (i / n) * WW, cy - f(t) * (H / 2)]); }
+      line(pts);
+      const sy = pts[0][1]; ctx.lineWidth = 1.5 * u; line([[x0, sy - 4 * u], [x0, sy + 4 * u]]);
     }
     ctx.restore();
   }
@@ -621,7 +633,12 @@ function renderScreen(scr, palName, S) {
     else { // knob: a 270-degree arc with its pointer
       const r = 20, kcx = cx, kcy = gy + gh / 2, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, a = a0 + (a1 - a0) * pct;
       ctx.strokeStyle = P.LINE; ctx.lineWidth = 4 * lk; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a1); ctx.stroke();
-      ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a); ctx.stroke();
+      ctx.strokeStyle = col;
+      if (c.bipolar) {   // centre-zero: the arc sweeps from 12 o'clock to the value; a small mark at 12 o'clock
+        const am = Math.PI * 1.5; ctx.beginPath(); ctx.arc(kcx, kcy, r, Math.min(a, am), Math.max(a, am)); ctx.stroke();
+        ctx.lineWidth = 2 * lk; ctx.beginPath(); ctx.moveTo(kcx, kcy - r - 4.5); ctx.lineTo(kcx, kcy - r - 8.5); ctx.stroke();
+        ctx.lineWidth = 4 * lk;
+      } else { ctx.beginPath(); ctx.arc(kcx, kcy, r, a0, a); ctx.stroke(); }
       ctx.lineWidth = 3 * lk; ctx.beginPath(); ctx.moveTo(kcx + 6 * Math.cos(a), kcy + 6 * Math.sin(a)); ctx.lineTo(kcx + (r - 6) * Math.cos(a), kcy + (r - 6) * Math.sin(a)); ctx.stroke(); }
     ctx.lineJoin = "miter"; ctx.lineCap = "butt";
   }
@@ -933,7 +950,7 @@ function renderScreen(scr, palName, S) {
     // a cell glyph: a wave shape (cell.wave) or a params glyph scaled into a w x h box
     const cellGlyph = (c, x, y, w, h, col) => {
       if (c.glyph === "none" || c.glyph === "ratio" || (!c.glyph && !c.wave)) return;
-      if (c.wave) { waveShape(x, y, w, h, c.wave, c.shape ?? 0.5, c.cycles || 1, col, 2); return; }
+      if (c.wave && c.glyph !== "lfowave") { waveShape(x, y, w, h, c.wave, c.shape ?? 0.5, c.cycles || 1, col, 2); return; }
       if (c.bipolar && c.glyph === "bar") {   // centre-zero vertical bar: pct 0.5 = zero
         const bw = Math.min(14, w * 0.4), bx = x + w / 2 - bw / 2, m = y + h / 2, v = (clamp01(c.pct ?? 0.5) - 0.5) * h;
         rr(bx, y, bw, h, 2, P.LINE); ctx.fillStyle = col; ctx.fillRect(bx, Math.min(m, m - v), bw, Math.abs(v));
@@ -965,15 +982,19 @@ function renderScreen(scr, palName, S) {
       o = o || {};
       const T = !!o.tall, RG = !!o.ring;   // o.ring: knobrow inside a ring, four 42 px cells at x 36-204, 60 px tall
       const h = (RG ? 60 : T ? 72 : big ? 100 : 56) * s, lpx = RG ? 9 : big ? 12 : 10, vpx = RG ? 12 : big ? 17 : 13, gh = (RG ? 28 : T ? 36 : big ? 34 : 22) * s;
-      const ly = y + (RG ? 10 : big ? 16 : 11) * s, gy = y + (RG ? 14 : big ? 26 : 15) * s, vy = y + (RG ? 55 : T ? 66 : big ? 82 : 51) * s, gw = RG ? 32 : T ? 48 : 50;
+      const ly = y + (RG ? 10 : big ? 16 : 11) * s, gy = y + (RG ? 14 : big ? 26 : 15) * s, vy = y + (RG ? 55 : T ? 66 : big ? 82 : 51) * s, gw1 = RG ? 32 : T ? 48 : 50;
       const cw = RG ? 42 : 60, cx0 = RG ? 36 : 0;
-      (Array.isArray(row) ? row : []).slice(0, 4).forEach((c, ci) => {
-        const x = cx0 + ci * cw, w = cw, cx = x + w / 2;
+      let col0 = 0;   // the next free column: a span-2 cell takes two, the cells after it shift right
+      (Array.isArray(row) ? row : []).forEach((c, ci) => {
+        if (col0 >= 4) return;
+        const sp = c && Number(c.span) >= 2 && col0 < 3 ? 2 : 1, kc = col0;
+        const x = cx0 + col0 * cw, w = cw * sp, cx = x + w / 2, gw = gw1 * sp;
+        col0 += sp;
         if (!c) { if (o.dash) text("–", cx, vy, vpx, P.DIM, "center", 700); return; }
         const ratio = c.glyph === "ratio" && String(c.value ?? "").includes("/");
         const bigV = !ratio && (!!c.big || c.glyph === "ratio");   // a number-only cell (no glyph, no bar)
         if (o.autoBar && !bigV && !ratio && !c.wave && (!c.glyph || c.glyph === "none") && c.pct != null) c = { ...c, glyph: "bar" };
-        const lit = on && !c.dim, col = lit ? cc(c, ci) : P.DIM, isHot = hotCi === ci;   // c.dim: inactive grey
+        const lit = on && !c.dim, col = lit ? cc(c, kc) : P.DIM, isHot = hotCi === ci;   // c.dim: inactive grey; colour by (first) column
         text(fit(c.label || "", lpx, w - 4, 600), cx, ly, lpx, col, "center", 600);
         const mid = (gy + vy) / 2;   // the centre of the glyph + value space (glyph top .. value baseline)
         if (ratio) {   // a fraction: numerator 13 bold over a 1.5 px divider over the denominator 13
@@ -1045,23 +1066,27 @@ function renderScreen(scr, palName, S) {
         const y = r0 + ri * rh, on = ri === act;
         if (ri) { ctx.fillStyle = P.LINE; ctx.fillRect(4, y - 0.5, 232, 1); }
         if (row && row.label) text(fit(row.label, 11, lw - 6, 700), 6, y + rh / 2 + 4, 11, on ? P.TEXT : P.DIM, "left", 700);
-        ((row && row.cells) || []).slice(0, 4).forEach((c, ci) => {
+        let col0 = 0;   // span 2: the cell takes two columns, the cells after it shift right
+        ((row && row.cells) || []).forEach((c, ci) => {
+          if (col0 >= 4) return;
+          const sp = c && Number(c.span) >= 2 && col0 < 3 ? 2 : 1, kc = col0, x = lw + col0 * cw, w = cw * sp;
+          col0 += sp;
           if (!c) return;
-          const x = lw + ci * cw, cx = x + cw / 2, col = on ? cc(c, ci) : P.DIM, isHot = !!hot && hot[0] === ri && hot[1] === ci;
-          const bar = (by, bh) => hbar(c, x + 6, cw - 12, by, bh, col);
+          const cx = x + w / 2, col = on ? cc(c, kc) : P.DIM, isHot = !!hot && hot[0] === ri && hot[1] === ci;
+          const bar = (by, bh) => hbar(c, x + 6, w - 12, by, bh, col);
           if (compact) {   // ~24 px rows (the mod matrix): text only, a thin bar
-            cellValue(c, cx, y + 14, cw, 12, col, isHot);
+            cellValue(c, cx, y + 14, w, 12, col, isHot);
             bar(y + 17.5, 2);
           } else if (c.wave || (c.glyph && c.glyph !== "none" && c.glyph !== "bar")) {   // a glyph cell (bar = text + bar)
             const showV = rh >= 44 && c.value != null && c.value !== "", gh = showV ? Math.min(rh - 24, 40) : Math.min(rh - 10, 40);
-            cellGlyph(c, x + 6, y + 4 + (showV ? 0 : (rh - 10 - gh) / 2), cw - 12, gh, col);
-            if (showV) cellValue(c, cx, y + 4 + gh + 14, cw, 11, col, isHot);
+            cellGlyph(c, x + 6, y + 4 + (showV ? 0 : (rh - 10 - gh) / 2), w - 12, gh, col);
+            if (showV) cellValue(c, cx, y + 4 + gh + 14, w, 11, col, isHot);
           } else {
             const vpx = rh >= 45 ? 15 : 13, vy = y + rh / 2 + vpx / 2 - 3;
-            cellValue(c, cx, vy, cw, vpx, col, isHot);
+            cellValue(c, cx, vy, w, vpx, col, isHot);
             bar(vy + 5, 3);
           }
-          if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + rh - 3, cw - 8, 2); }
+          if (on) { ctx.fillStyle = col; ctx.fillRect(x + 4, y + rh - 3, w - 8, 2); }
         });
       });
     }

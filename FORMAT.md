@@ -162,7 +162,7 @@ vertically into the remaining panel).
 
 **Shared.** The top line (y 0–24): `title` left in 13 px bold (`titleCol`, default white; a trailing
 `*` means "edited"), `right` right-aligned in 11 px grey. A **cell** is `null` (empty) or
-`{ label, value, col, glyph, pct, pct2, bipolar, big, env, cycles, n, wave, shape }`:
+`{ label, value, col, glyph, pct, pct2, bipolar, big, span, env, cycles, n, wave, shape }`:
 
 - `col` its knob colour; without it the colour is taken by column index: **blue, orange, white, green**
   (KNOB 1–4; palettes without those names fall back to theme / accent / text / mint).
@@ -200,6 +200,13 @@ vertically into the remaining panel).
     vertically by a fixed pseudo-random offset (sin(i·78.233 + 1.7), i = 0..16, so renders are
     reproducible) scaled by `pct`·0.45·box height. Above `pct` 0.3 every third segment is left out, above
     0.7 every second, so it reads as a broken, jittering line.
+  - `lfowave` one LFO cycle (two in a `span: 2` box, so the phase shift shows) of the wave named by the
+    cell's **`wave`** field, lower case: `tri` (starts at zero, rising), `sine`, `square`, `saw` (rising
+    ramp, then a drop), `ramp` (falling), `exp` (an exponential decay from the top), `random` (8
+    deterministic stepped levels per cycle); default `sine`. 2 px stroke through the box's full height;
+    the wave is started `pct` of a cycle later (`pct` 0.25 = the wave as it is a quarter cycle in). A short
+    vertical tick at the box's left edge, at the starting level, marks the start point. (With
+    `glyph: "lfowave"` the `wave` field names the LFO shape; it is not the oscillator `wave` below.)
 - `glyph: "ratio"` (a fraction, no bar): `value` is a string `"B1/B2"` such as `"0.50/1.00"`; the numerator
   (13 px bold) over a 1.5 px divider (the cell width − 14) over the denominator (13 px), centred in the
   glyph + value space, in the cell colour (`hot`: one block behind the whole fraction, the text in the
@@ -209,7 +216,15 @@ vertically into the remaining panel).
   34 px row, 20 in `knobrow`, 19 in a ringed `knobrow`), centred vertically in the glyph + value space
   (glyph top to value baseline). For Algo and the operator ratios. (`stack` draws it as a text cell.)
 - `bipolar: true`: the bar is centre-zero, **`pct` 0.5 = zero** (0 = full negative, 1 = full positive);
-  with `glyph: "bar"` the vertical bar grows up / down from the middle.
+  with `glyph: "bar"` the vertical bar grows up / down from the middle; with `glyph: "knob"` the coloured
+  arc sweeps from 12 o'clock to the value (left for `pct` < 0.5, right for > 0.5; the pointer as usual)
+  and a small mark sits just outside the ring at 12 o'clock.
+- `span: 2` (`edit8`, `knobrow`, `stack`): the cell takes two columns' width (120 px in `edit8`; 84 in a
+  ringed `knobrow`; two `stack` columns). Its glyph box doubles in width, label and value are centred over
+  the double width, and the knob bar under it spans both columns in the **first** column's knob colour.
+  The row's remaining cells shift right by one column, so a row `[spanCell, c3, c4]` lays out as columns
+  0–1, 2, 3 (colours by column: blue, then white, green); cells past column 3 are dropped, and a span in
+  the last column is ignored. `hot` still counts cells (array index), not columns.
 - `wave` (optional, `SAW SQR TRI SIN PWM NOIS`, with `shape` 0–1 = PWM duty / TRI peak and `cycles`,
   default 1): draws that oscillator shape instead of a `glyph`.
 - **`active`** (row index) is the row that is on KNOB 1–4: its labels, glyphs and values are in the knob
