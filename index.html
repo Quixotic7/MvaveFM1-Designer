@@ -593,11 +593,11 @@ function renderScreen(scr, palName, S) {
         vs.push(v); }
       const mx = Math.max(1e-6, ...vs.map(Math.abs));
       line(vs.map((v, i) => [x0 + (i / n) * W, cy - (v / mx) * (H / 2)]));
-    } else if (g === "detune") {   // two sine cycles, the second (60 % bright, behind) shifted by pct * half a cycle
-      const n = Math.max(48, Math.ceil(W / u)), sh = pct * Math.PI;
-      const sine = ph => { const pts = []; for (let i = 0; i <= n; i++) { const t = i / n; pts.push([x0 + t * W, cy - Math.sin(t * Math.PI * 2 - ph) * (H / 2)]); } return pts; };
-      ctx.strokeStyle = mixCss(col, P.BG, 0.4); line(sine(sh));
-      ctx.strokeStyle = col; line(sine(0));
+    } else if (g === "detune") {   // flat, then broken: a 16-segment line whose joints jitter by pct and whose segments drop out
+      const n = 16, a = pct * 0.45 * H, jit = i => Math.sin(i * 78.233 + 1.7);   // fixed -1..1 offsets, reproducible
+      const skip = i => pct > 0.7 ? i % 2 === 1 : pct > 0.3 ? i % 3 === 2 : false;
+      for (let i = 0; i < n; i++) { if (skip(i)) continue;
+        line([[x0 + W * i / n, cy + jit(i) * a], [x0 + W * (i + 1) / n, cy + jit(i + 1) * a]]); }
     }
     ctx.restore();
   }

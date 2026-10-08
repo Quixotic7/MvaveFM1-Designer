@@ -195,9 +195,11 @@ vertically into the remaining panel).
   - `harm` one cycle of a wave through the box's full height (normalised): `pct` 0.5 a pure sine; toward 1
     it adds the 3rd, 5th and 7th harmonics (1/n amplitudes, scaled by (`pct` − 0.5)·2) and reads square-ish;
     toward 0 it adds the 2nd–7th (1/n, scaled by (0.5 − `pct`)·2) and reads saw-ish (FM harmonics).
-  - `detune` two sine cycles overlaid across the box (full height): the first in the cell colour, the second
-    behind it at 60 % brightness (the colour mixed 40 % toward the background) and shifted right by
-    `pct`·½ cycle — they coincide at 0 and are a half cycle apart (mirrored) at 1.
+  - `detune` "flat, then broken": a horizontal line through the box's vertical centre made of 16 segments
+    (2 px, cell colour). At `pct` 0 it is one straight line; as `pct` grows each joint is displaced
+    vertically by a fixed pseudo-random offset (sin(i·78.233 + 1.7), i = 0..16, so renders are
+    reproducible) scaled by `pct`·0.45·box height. Above `pct` 0.3 every third segment is left out, above
+    0.7 every second, so it reads as a broken, jittering line.
 - `glyph: "ratio"` (a fraction, no bar): `value` is a string `"B1/B2"` such as `"0.50/1.00"`; the numerator
   (13 px bold) over a 1.5 px divider (the cell width − 14) over the denominator (13 px), centred in the
   glyph + value space, in the cell colour (`hot`: one block behind the whole fraction, the text in the
