@@ -508,10 +508,10 @@ function renderScreen(scr, palName, S) {
   const px0 = 10, pw = 220, py0 = Y_PANEL, ph = H_PANEL;
   const title = () => { let y = py0 + 16; if (p.title) { text(p.title, px0, y, 15, P.THEME, "left", 600); if (p.subtitle) text(fit(p.subtitle, 11, pw - tw(p.title, 15, 600) - 8), px0 + tw(p.title, 15, 600) + 6, y, 11, P.MID); y += 8; } return y; };
 
-  /* the parameter pictograms (room echoes moon lfo clip spring mix gate range arrow shift): flat 2 px strokes
+  /* the parameter pictograms (room echoes moon lfo clip spring mix gate range arrow shift harm): flat 2 px strokes
      in col, filled parts in col; pct the main value, pct2 (c.pct2, default 0.5) a second one; u = glyph units
      per screen pixel (the caller's scale), so strokes and pixel sizes stay true when the box is scaled */
-  const PICTO = new Set(["room", "echoes", "moon", "lfo", "clip", "spring", "mix", "gate", "range", "arrow", "shift"]);
+  const PICTO = new Set(["room", "echoes", "moon", "lfo", "clip", "spring", "mix", "gate", "range", "arrow", "shift", "harm"]);
   function drawPicto(g, c, x, y, w, h, col, pct, u) {
     const lw = 2 * u, m = lw, x0 = x + m, x1 = x + w - m, y0 = y + m, y1 = y + h - m, W = x1 - x0, H = y1 - y0;
     const cx = x + w / 2, cy = y + h / 2, pct2 = Math.max(0, Math.min(1, Number(c.pct2 ?? 0.5) || 0));
@@ -575,6 +575,13 @@ function renderScreen(scr, palName, S) {
       const sq = Math.max(4 * u, H / 4 * 0.8), ly0 = y0 + sq / 2, ly1 = y1 - sq / 2, gap = (ly1 - ly0) / 4, lw2 = Math.min(W, H * 1.6);
       for (let i = 0; i < 5; i++) { const yy = ly0 + i * gap; line([[cx - lw2 / 2, yy], [cx + lw2 / 2, yy]]); }
       const yy = ly1 - Math.round(pct * 4) * gap; ctx.fillRect(cx - sq / 2, yy - sq / 2, sq, sq);
+    } else if (g === "harm") {   // one cycle: 0.5 a sine, -> 1 adds odd harmonics (square-ish), -> 0 all (saw-ish)
+      const so = Math.max(0, (pct - 0.5) * 2), sa = Math.max(0, (0.5 - pct) * 2), n = Math.max(48, Math.ceil(W / u)), vs = [];
+      for (let i = 0; i <= n; i++) { const ph = (i / n) * Math.PI * 2; let v = Math.sin(ph);
+        for (let k = 2; k <= 7; k++) v += Math.sin(ph * k) / k * ((k % 2 ? so : 0) + sa);
+        vs.push(v); }
+      const mx = Math.max(1e-6, ...vs.map(Math.abs));
+      line(vs.map((v, i) => [x0 + (i / n) * W, cy - (v / mx) * (H / 2)]));
     }
     ctx.restore();
   }
@@ -886,6 +893,27 @@ function renderScreen(scr, palName, S) {
     const cc = (c, i) => colOf(P, c && c.col, KC[i % 4]);
     const clamp01 = v => Math.max(0, Math.min(1, Number(v) || 0));
     const hot = Array.isArray(p.hot) && p.hot.length === 2 ? p.hot.map(Number) : null, act = Number(p.active ?? 0);
+    // the Digitone's eight algorithms for the `algo` band (our documented model; correct the routings here).
+    // Operators C A B1 B2; mod: [source, target] arrows; fb: the feedback operator; X / Y: the carriers summed
+    // into each output; pos: [row 0 top .. 2 bottom (carriers), x as a fraction of the diagram's width]
+    const ALGOS = {
+      1: { mod: [["A", "C"], ["B1", "A"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["C"],
+           pos: { C: [2, 0.4], A: [1, 0.4], B1: [0, 0.4], B2: [0, 0.75] } },
+      2: { mod: [["A", "C"], ["B1", "C"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["C"],
+           pos: { C: [2, 0.45], A: [1, 0.2], B1: [1, 0.7], B2: [0, 0.7] } },
+      3: { mod: [["A", "C"], ["B1", "A"], ["B2", "A"]], fb: "B2", X: ["C"], Y: ["C"],
+           pos: { C: [2, 0.45], A: [1, 0.45], B1: [0, 0.2], B2: [0, 0.7] } },
+      4: { mod: [["A", "C"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["B1"],
+           pos: { C: [2, 0.25], A: [1, 0.25], B1: [2, 0.7], B2: [1, 0.7] } },
+      5: { mod: [["A", "C"], ["B1", "A"]], fb: "B2", X: ["C"], Y: ["B2"],
+           pos: { C: [2, 0.25], A: [1, 0.25], B1: [0, 0.25], B2: [2, 0.7] } },
+      6: { mod: [["A", "C"], ["A", "B1"], ["B2", "B1"]], fb: "B2", X: ["C"], Y: ["B1"],
+           pos: { C: [2, 0.25], A: [1, 0.25], B1: [2, 0.7], B2: [1, 0.7] } },
+      7: { mod: [["B2", "B1"]], fb: "A", X: ["C", "A"], Y: ["B1"],
+           pos: { C: [2, 0.1], A: [2, 0.4], B1: [2, 0.75], B2: [1, 0.75] } },
+      8: { mod: [], fb: "B2", X: ["C", "A"], Y: ["B1", "B2"],
+           pos: { C: [2, 0.05], A: [2, 0.3], B1: [2, 0.6], B2: [2, 0.85] } },
+    };
     // a cell glyph: a wave shape (cell.wave) or a params glyph scaled into a w x h box
     const cellGlyph = (c, x, y, w, h, col) => {
       if (c.glyph === "none" || (!c.glyph && !c.wave)) return;
@@ -1008,7 +1036,7 @@ function renderScreen(scr, palName, S) {
       });
     }
 
-    // the wide band: one AHDSR envelope, a filter response or two cycles of a wave, across the screen
+    // the wide band: an AHDSR or FM operator (ade) envelope, an FM algorithm, a filter response or a wave
     function drawWide(wd, y0, y1, rows) {
       const L = 8, R = 232, W = R - L, H = y1 - y0, kk = H / 96;
       ctx.lineJoin = "round"; ctx.lineCap = "round";
@@ -1047,8 +1075,73 @@ function renderScreen(scr, palName, S) {
         ctx.fillStyle = P.LINE; ctx.fillRect(L, cy - 0.5, W, 1);
         waveShape(L, y0 + 10 * kk, W, H - 20 * kk, wd.wave, wd.shape ?? 0.5, wd.cycles || 2, colOf(P, wd.col, KC[0]), 3);
         text(String(wd.wave || "SIN").toUpperCase(), L, y0 + 12 * kk, 10, P.MID, "left", 700);
+      } else if (wd.type === "ade") {
+        // an operator envelope: 0 -> lev over a (40 % of the band at a = 1), -> end over d (40 %), held at end
+        const a = clamp01(wd.a ?? 0.2), d = clamp01(wd.d ?? 0.4), lev = clamp01(wd.lev ?? 1), end = clamp01(wd.end ?? 0);
+        const seg = wd.seg == null ? -1 : Math.round(Number(wd.seg));
+        const yT = y0 + 16 * kk, yB = y0 + 84 * kk, yP = yB - (yB - yT) * lev, yE = yB - (yB - yT) * end;
+        const xA = L + 0.4 * W * a, xD = xA + 0.4 * W * d, pts = [[L, yB], [xA, yP], [xD, yE], [R, yE]];
+        const hc = hot && rows[hot[0]] ? rows[hot[0]][hot[1]] : null;
+        const segCol = wd.col ? colOf(P, wd.col, KC[0]) : hc ? cc(hc, hot[1]) : KC[(seg >= 0 ? seg : 0) % 4];
+        ctx.fillStyle = P.LINE; ctx.fillRect(L, yB + 1, W, 1);
+        ctx.strokeStyle = P.TEXT; ctx.lineWidth = 3; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+        if (seg >= 0 && seg <= 2) {   // 0 attack, 1 decay, 2 the hold at the end level
+          ctx.strokeStyle = segCol; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(pts[seg][0], pts[seg][1]); ctx.lineTo(pts[seg + 1][0], pts[seg + 1][1]); ctx.stroke();
+          [pts[seg], pts[seg + 1]].forEach(q => { ctx.fillStyle = segCol; ctx.beginPath(); ctx.arc(q[0], q[1], 3.5, 0, Math.PI * 2); ctx.fill(); });
+        } else if (seg === 3) { ctx.fillStyle = segCol; ctx.fillRect(xA - 2.5, yP - 2.5, 5, 5); }   // the level: the peak
+        const ly = y0 + 95 * kk, ax = Math.max(L + 4, xA), dx = Math.max(xD, ax + 10);
+        text("A", ax, ly, 9, seg === 0 ? segCol : P.DIM, "center", 700);
+        text("D", Math.min(dx, R - 14), ly, 9, seg === 1 ? segCol : P.DIM, "center", 700);
+        text("E", R - 4, ly, 9, seg === 2 ? segCol : P.DIM, "center", 700);
+        text("L", Math.max(L + 3, xA), yP - 6, 8, seg === 3 ? segCol : P.DIM, "center", 700);
+      } else if (wd.type === "algo") {
+        drawAlgo(wd, y0, kk, L, R);
       }
       ctx.lineJoin = "miter"; ctx.lineCap = "butt";
+    }
+
+    // an algo band (ALGOS is defined with the editor's constants above)
+    function drawAlgo(wd, y0, kk, L, R) {
+      const n = Math.min(8, Math.max(1, Math.round(Number(wd.algo) || 1))), al = ALGOS[n];
+      const fb = clamp01(wd.fdbk ?? 0), mix = clamp01(wd.mix ?? 0.5);
+      const DX0 = L + 52, DW = R - 18 - DX0, hs = 7 * Math.min(1, kk), rowY = [13, 37, 61].map(v => y0 + v * kk);
+      const at = op => [DX0 + al.pos[op][1] * DW, rowY[al.pos[op][0]]];
+      text("ALGO", L, y0 + 12 * kk, 10, P.MID, "left", 700);
+      text(String(n), L, y0 + 40 * kk, 24, P.TEXT, "left", 700);
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      // modulation arrows, box edge to box edge
+      ctx.strokeStyle = P.MID; ctx.fillStyle = P.MID; ctx.lineWidth = 1.5;
+      al.mod.forEach(([s, t]) => {
+        const [sx, sy] = at(s), [tx, ty] = at(t), dx = tx - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+        const e = hs / Math.max(Math.abs(ux), Math.abs(uy)) + 1, ax = sx + ux * e, ay = sy + uy * e, bx = tx - ux * e, by = ty - uy * e;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx - ux * 3, by - uy * 3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - ux * 4.5 - uy * 2.5, by - uy * 4.5 + ux * 2.5); ctx.lineTo(bx - ux * 4.5 + uy * 2.5, by - uy * 4.5 - ux * 2.5); ctx.closePath(); ctx.fill();
+      });
+      // outputs: each carrier down to a bus, a stub to its label; X and Y side by side when they share carriers
+      const xs = ops => ops.map(o => at(o)[0]), mean = a => a.reduce((p, q) => p + q, 0) / a.length;
+      let lx = mean(xs(al.X)), ly = mean(xs(al.Y));
+      if (Math.abs(lx - ly) < 16) { const m = (lx + ly) / 2; lx = m - 12; ly = m + 12; }
+      const busY = y0 + 76 * kk, labY = y0 + 92 * kk, strong = mix > 0.5 ? "Y" : mix < 0.5 ? "X" : "XY";
+      [["X", al.X, lx], ["Y", al.Y, ly]].forEach(([nm, ops, x]) => {
+        const col = strong.includes(nm) ? P.TEXT : P.DIM, cxs = xs(ops);
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+        cxs.forEach(cx => { ctx.beginPath(); ctx.moveTo(cx, rowY[2] + hs + 1); ctx.lineTo(cx, busY); ctx.stroke(); });
+        ctx.beginPath(); ctx.moveTo(Math.min(x, ...cxs), busY); ctx.lineTo(Math.max(x, ...cxs), busY); ctx.moveTo(x, busY); ctx.lineTo(x, labY - 10); ctx.stroke();
+        text(nm, x, labY, 11, col, "center", 700);
+      });
+      // the boxes
+      ["C", "A", "B1", "B2"].forEach(op => {
+        const [x, y] = at(op);
+        ctx.fillStyle = P.BG; ctx.fillRect(x - hs, y - hs, 2 * hs, 2 * hs);
+        ctx.strokeStyle = P.TEXT; ctx.lineWidth = 1.5; ctx.strokeRect(x - hs, y - hs, 2 * hs, 2 * hs);
+        text(op, x, y + 3.2, 9, P.TEXT, "center", 700);
+      });
+      // the feedback loop on the right of its operator, thicker with fdbk
+      { const [x, y] = at(al.fb), r = 5, lcx = x + hs + 1;
+        ctx.strokeStyle = P.TEXT; ctx.fillStyle = P.TEXT; ctx.lineWidth = 1 + 2 * fb;
+        ctx.beginPath(); ctx.arc(lcx, y, r, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+        const ey = y + r;   // the arrowhead at the lower end, pointing back into the box
+        ctx.beginPath(); ctx.moveTo(x + hs + 0.5, ey); ctx.lineTo(x + hs + 5, ey - 3); ctx.lineTo(x + hs + 5, ey + 3); ctx.closePath(); ctx.fill(); }
     }
   } else if (kind === "text") {
     let y = title();

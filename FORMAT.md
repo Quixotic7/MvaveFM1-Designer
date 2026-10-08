@@ -151,7 +151,7 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
 | `scope` | `root quality sup amp freq` | an oscilloscope wave (React view) |
 | `text` | `title lines` | free lines; a line is `{ t, px, col: theme\|accent\|dim, center, w }` or a string |
 | `loop` | `value label pct rec layers status title right` | the loop page: a ring with the bar count inside, layer rings, a status line |
-| `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a DX7 envelope, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
+| `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a DX7 envelope, an FM operator envelope, an FM algorithm, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
 | `stack` | `title titleCol right cols rows active hot` | N = 1–8 equal rows of four cells under column headings (oscillators, LFOs, the 8-slot mod matrix), a row label at the left; the `active` row in the knob colours, the others grey. See **Sound editor panels** |
 
 ### Sound editor panels (`edit8`, `stack`, `knobrow`)
@@ -192,6 +192,9 @@ vertically into the remaining panel).
     in a triangle (random).
   - `shift` five staff lines with a filled square on line `round(pct·4)` (0 the bottom, 1 the top): an
     octave shift.
+  - `harm` one cycle of a wave through the box's full height (normalised): `pct` 0.5 a pure sine; toward 1
+    it adds the 3rd, 5th and 7th harmonics (1/n amplitudes, scaled by (`pct` − 0.5)·2) and reads square-ish;
+    toward 0 it adds the 2nd–7th (1/n, scaled by (0.5 − `pct`)·2) and reads saw-ish (FM harmonics).
 - `bipolar: true`: the bar is centre-zero, **`pct` 0.5 = zero** (0 = full negative, 1 = full positive);
   with `glyph: "bar"` the vertical bar grows up / down from the middle.
 - `wave` (optional, `SAW SQR TRI SIN PWM NOIS`, with `shape` 0–1 = PWM duty / TRI peak and `cycles`,
@@ -219,6 +222,24 @@ vertically into the remaining panel).
   (1..4: the one R k / L k ends, `null` = none) thicker in `col` (as `env`); digits 1–4 under the segments;
   `pitch: true`: a faint centre line at 50 (the pitch EG's no-change level). The designer's renderer does not draw
   it yet (the firmware does: firmware/src/cr_draw.c `cr_wide`).
+- `{ "type": "ade", "a", "d", "end", "lev", "seg", "col" }` (all 0–1): a 4-operator FM operator envelope
+  (Digitone-style): from 0 up to `lev` over `a` (`a` = 1 is 40 % of the band), down to `end` over `d` (40 %
+  at 1), then held flat at `end` to the right edge; 3 px white over a faint baseline; letters `A D E` (9 px)
+  under the baseline at the attack end, the decay end and the right edge, a small `L` (8 px) above the peak;
+  `seg` (0 attack, 1 decay, 2 the hold at the end level, 3 the level: a 5 px square on the peak; `null` =
+  none) in `col` (as `env`: default the `hot` cell's colour, else the knob colour blue orange white green
+  of `seg`).
+- `{ "type": "algo", "algo": 1–8, "fdbk", "mix" }` (`fdbk mix` 0–1): the 4-operator FM algorithm as a box
+  diagram: `ALGO` and the number at the left; four 14 px operator boxes `C A B1 B2` on a three-row grid
+  (modulators of modulators on top, modulators in the middle, carriers at the bottom), 1.5 px arrows with
+  arrowheads from modulator to target (two arrows where one operator modulates two), the feedback operator
+  with a loop arrow on its right (stroke 1 + 2·`fdbk` px); each carrier drops to a bus over the output label
+  `X` or `Y` (both drawn; the stronger by `mix` — X at 1 − `mix`, Y at `mix` — in the text colour, the other
+  dim; equal at 0.5). The routings (index.html `ALGOS`, our documented model of the Digitone's):
+  1 C←A←B1←B2, X = Y = C · 2 C←A, C←B1←B2, X = Y = C · 3 C←A←B1, A←B2, X = Y = C ·
+  4 C←A, B1←B2, X = C, Y = B1 · 5 C←A←B1, B2 alone, X = C, Y = B2 · 6 C←A, B1←A, B1←B2, X = C, Y = B1 ·
+  7 C, A, B1←B2, X = C + A, Y = B1 (A has the feedback) · 8 four carriers, X = C + A, Y = B1 + B2;
+  the feedback is on B2 except in 7.
 - `null` / omitted: no band, the rows get the room and larger glyphs.
 
 **`knobrow`** (a layer screen, drawn in the normal panel under the header, which carries the layer name;
