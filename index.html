@@ -715,6 +715,114 @@ function renderScreen(scr, palName, S) {
       text(b.t, x, y + 4, b.t.length > 2 ? 10 : 12, b.hollow ? col : P.BG, "center", 700);
     });
   }
+  /* the looper's PLAY menu parts (the `loopmenu` kind; each is also a panel kind of its own): the slot strip, a
+     horizontal picker band, the middle (a big text, the record timeline or the step grid). dc = the default colour */
+  const numIn = v => v != null && v !== "" && isFinite(Number(v));
+  // the slot strip: n cells (1-based) along the band's bottom, `used` filled grey, `sel` in col and taller with a
+  // bigger number; `big` a name at the left (the cells take the rest); `jump`: the selection moves from `sel` to
+  // `jump` (Advance): `jump` is drawn selected and a hop arrow under the cells runs from `sel` to it
+  function drawSlots(s, x, y, w, h, dc) {
+    const n = Math.max(1, Math.min(32, Math.round(Number(s.n) || 10))), col = colOf(P, s.col, dc);
+    const used = new Set((Array.isArray(s.used) ? s.used : []).map(Number)), jump = numIn(s.jump) ? Number(s.jump) : null;
+    const sel = jump != null ? jump : Number(s.sel), from = jump != null && numIn(s.sel) ? Number(s.sel) : null;
+    let cx0 = x;
+    if (s.big) { const bpx = Math.min(20, h - 4); text(s.big, x + 2, y + h - 6, bpx, col, "left", 700); cx0 = x + 2 + tw(s.big, bpx, 700) + 10; }
+    const gap = 3, cw = (x + w - cx0 - gap * (n - 1)) / n, bot = y + h - 4, ch = Math.round(h * 0.62);
+    const cxOf = i => cx0 + (i - 1) * (cw + gap) + cw / 2;
+    for (let i = 1; i <= n; i++) {
+      const cx = cxOf(i), on = i === sel, full = used.has(i), top = on ? y + 1 : bot - ch, npx = on ? 13 : cw < 15 && i > 9 ? 9 : 10;
+      if (full) rr(cx - cw / 2, top, cw, bot - top, 2, on ? col : P.DIM);
+      else { ctx.save(); ctx.strokeStyle = on ? col : P.LINE; ctx.lineWidth = on ? 2 : 1.5; ctx.strokeRect(cx - cw / 2 + 1, top + 1, cw - 2, bot - top - 2); ctx.restore(); }
+      text(String(i), cx, (top + bot) / 2 + npx * 0.36, npx, full ? P.BG : on ? col : P.DIM, "center", on ? 800 : 600);
+    }
+    if (from != null && from >= 1 && from <= n && from !== sel) {   // the hop: down from `sel`, along, up into `jump`
+      const a = cxOf(from), b = cxOf(sel), yy = bot + 2.5;
+      ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.moveTo(a, bot + 0.5); ctx.lineTo(a, yy); ctx.lineTo(b, yy); ctx.lineTo(b, bot + 1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(b - 3, bot + 2); ctx.lineTo(b + 3, bot + 2); ctx.lineTo(b, bot - 1.5); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+  }
+  // a horizontal picker band (loopmenu's `mode`): items[sel] big in col (squeezed to 150 px), the neighbours
+  // peeking 13 px dim at the edges (hidden without room), the position marks under it
+  function drawHPick(m, y, h, dc) {
+    const items = Array.isArray(m.items) ? m.items : [], n = items.length; if (!n) return;
+    const sel = Math.max(0, Math.min(n - 1, Number(m.sel) || 0)), col = colOf(P, m.col, dc);
+    const name = i => { const it = items[i]; return typeof it === "string" ? it : (it && it.t) || ""; };
+    const size = Number(m.size) || Math.min(28, h - 8), base = y + 2 + size * 0.78, maxW = 150;
+    const bigW = Math.min(tw(name(sel), size, 700), maxW), room = (228 - bigW) / 2 - 10;
+    if (sel > 0 && room > 24) text(fit(name(sel - 1), 13, room), 6, base - 3, 13, P.DIM, "left", 500);
+    if (sel < n - 1 && room > 24) text(fit(name(sel + 1), 13, room), 234, base - 3, 13, P.DIM, "right", 500);
+    squeezedText(name(sel), 120, base, size, col, maxW);
+    if (n > 1) posMarks(n, sel, y + h - 6, col);
+  }
+  // the record timeline: a strip (w 200 x h 40) of bar boxes with beat ticks; positions are in bars from the
+  // loop's start (2.3 = 30 % into bar 3). lanes = the layers' events (oldest first, older dimmer; up to 4 lanes
+  // with `new`); new = the take being recorded (its own lane, full col); erase [a, b] = a held span in Replace (its
+  // events struck); pos = the playhead; free: the bars drawn as they pass (four across, then scrolling)
+  function drawTimeline(m, x, y, w, h, dc) {
+    const col = colOf(P, m.col, dc), sw = Math.min(w - 8, Number(m.w) || 200), sh = Math.min(h - 6, Number(m.h) || 40);
+    const under = m.elapsed ? 16 : 0, sx = x + (w - sw) / 2, sy = y + Math.max(5, (h - sh - under) / 2);
+    const beats = Math.max(1, Math.round(Number(m.beats) || 4)), hasPos = numIn(m.pos), pos = Number(m.pos), free = !!m.free;
+    let first = 0, nb, bw;
+    if (free) { const cur = hasPos ? Math.floor(pos) : Math.max(0, Math.round(Number(m.bars) || 1) - 1); first = Math.max(0, cur - 3); nb = cur - first + 1; bw = sw / 4; }
+    else { nb = Math.max(1, Math.round(Number(m.bars) || 1)); bw = sw / nb; }
+    const X = b => sx + (b - first) * bw, end = first + (free ? (hasPos ? pos : nb) : nb);
+    for (let k = 0; k < nb; k++) {   // the bar boxes (free: the current one only up to the playhead), the beat ticks
+      const b = first + k, bx = X(b) + 1, bwk = free && k === nb - 1 && hasPos ? Math.max(2, (pos - b) * bw - 1) : bw - 2;
+      rr(bx, sy, bwk, sh, 2, P.SURF, P.LINE);
+      if (bw / beats >= 4) for (let j = 1; j < beats; j++) { const tx = X(b) + j * bw / beats; if (tx > bx + bwk) break;
+        ctx.fillStyle = P.DIM; ctx.fillRect(tx - 0.5, sy, 1, 4); ctx.fillRect(tx - 0.5, sy + sh - 4, 1, 4); }
+    }
+    const fresh = Array.isArray(m["new"]) ? m["new"] : null, lanes = Array.isArray(m.lanes) ? m.lanes : [];
+    const old = lanes.slice(Math.max(0, lanes.length - (fresh ? 3 : 4))), L = Math.max(1, old.length + (fresh ? 1 : 0));
+    const pad = 5, lh = (sh - 2 * pad) / L, er = Array.isArray(m.erase) && m.erase.length === 2 ? m.erase.map(Number) : null;
+    const vis = b => isFinite(b) && b >= first - 1e-9 && b <= end + 1e-9;
+    if (er) { const e0 = X(Math.max(first, er[0])), e1 = X(Math.min(end, er[1]));   // the held span
+      ctx.fillStyle = mixCss(col, P.BG, 0.7); ctx.fillRect(e0, sy + 1, e1 - e0, sh - 2); ctx.fillStyle = col; ctx.fillRect(e0, sy, 1.5, sh); }
+    const mark = (b, li, c, struck) => { const mx = X(b), my = sy + pad + li * lh + 1, mh = Math.max(2, lh - 2);
+      ctx.fillStyle = c; ctx.fillRect(mx - 1.5, my, 3, mh);
+      if (struck) { ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(mx - 4, my); ctx.lineTo(mx + 4, my + mh); ctx.moveTo(mx + 4, my); ctx.lineTo(mx - 4, my + mh); ctx.stroke(); ctx.restore(); } };
+    old.forEach((lane, li) => { const age = old.length - li - (fresh ? 0 : 1), c = mixCss(col, P.BG, Math.min(0.62, 0.3 * age));
+      (Array.isArray(lane) ? lane : []).map(Number).forEach(b => { if (!vis(b)) return; const st = !!er && b >= er[0] && b <= er[1]; mark(b, li, st ? P.DIM : c, st); }); });
+    if (fresh) fresh.map(Number).forEach(b => { if (vis(b)) mark(b, L - 1, colOf(P, m.newCol, col), false); });
+    if (hasPos && pos >= first) { const px = X(pos);   // the playhead
+      ctx.fillStyle = col; ctx.fillRect(px - 1, sy - 2, 2, sh + 4);
+      ctx.beginPath(); ctx.moveTo(px - 4, sy - 5); ctx.lineTo(px + 4, sy - 5); ctx.lineTo(px, sy); ctx.closePath(); ctx.fill(); }
+    if (m.elapsed) text(m.elapsed, sx + sw / 2, sy + sh + 15, 13, P.MID, "center", 600);
+  }
+  // the step grid: one row per bar (four at most; the cursor's page of four), `per` steps across (gaps between beats
+  // of four); filled = the steps holding a chord (1-based), cursor = a 2 px outline in col; name (the cursor step's
+  // chord) under the grid at the left, right at the right
+  function drawSteps(m, x, y, w, h, dc) {
+    const col = colOf(P, m.col, dc), per = Math.max(1, Math.min(32, Math.round(Number(m.per) || 16))), bars = Math.max(1, Math.round(Number(m.bars) || 1));
+    const cur = numIn(m.cursor) ? Number(m.cursor) : null, b0 = cur ? Math.floor((cur - 1) / (per * 4)) * 4 : 0, rows = Math.max(1, Math.min(4, bars - b0));
+    const filled = new Set((Array.isArray(m.filled) ? m.filled : []).map(Number)), fcol = colOf(P, m.fillCol, col);
+    const gw = Math.min(w - 8, Number(m.w) || 200), gh = Math.min(h - 18, Number(m.h) || 40), rg = 2, rh = (gh - 3 * rg) / 4;
+    const grp = per > 4 && per % 4 === 0 ? 4 : 0, gap = 2, cw = (gw - (per - 1) * gap - (grp ? (per / grp - 1) * 2 : 0)) / per;
+    const under = m.name || m.right ? 18 : 0, H = rows * rh + (rows - 1) * rg, gx = x + (w - gw) / 2, gy = y + (h - H - under) / 2;
+    const cx = c => gx + c * (cw + gap) + (grp ? Math.floor(c / grp) * 2 : 0);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < per; c++) {
+      const st = (b0 + r) * per + c + 1, xx = cx(c), yy = gy + r * (rh + rg);
+      ctx.fillStyle = filled.has(st) ? fcol : P.LINE; ctx.fillRect(xx, yy, cw, rh);
+      if (st === cur) { ctx.save(); ctx.strokeStyle = P.BG; ctx.lineWidth = 1; ctx.strokeRect(xx - 3, yy - 3, cw + 6, rh + 6);
+        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.strokeRect(xx - 1.5, yy - 1.5, cw + 3, rh + 3); ctx.restore(); }
+    }
+    const ny = gy + H + 16;
+    const rw = m.right ? tw(m.right, 12, 600) : 0;
+    if (m.name) text(fit(m.name, 15, gw - rw - 8, 700), gx, ny, 15, colOf(P, m.nameCol, P.TEXT), "left", 700);
+    if (m.right) text(m.right, gx + gw, ny, 12, P.MID, "right", 600);
+  }
+  // the menu's middle: a string / { t, col, sub, size } (a big text), or a timeline / steps object
+  function drawMid(m, x, y, w, h, dc) {
+    if (m == null || m === "") return;
+    if (typeof m !== "object") m = { t: String(m) };
+    if (m.kind === "timeline") return drawTimeline(m, x, y, w, h, dc);
+    if (m.kind === "steps") return drawSteps(m, x, y, w, h, dc);
+    const col = colOf(P, m.col, dc), sub = m.sub ? 18 : 0, size = Number(m.size) || Math.max(14, Math.min(40, Math.round((h - sub) * 0.6)));
+    const base = y + (h - sub) / 2 + size * 0.36;
+    squeezedText(String(m.t ?? ""), x + w / 2, base, size, col, w - 16);
+    if (m.sub) text(fit(m.sub, 12, w - 16, 600), x + w / 2, base + 18, 12, P.MID, "center", 600);
+  }
 
   if (kind === "chord") {
     const hasChord = p.root && String(p.root).length;
@@ -917,7 +1025,13 @@ function renderScreen(scr, palName, S) {
       text(fit(String(c.value ?? ""), 15, cw - 2, 700), cx, gy + gh + 33, 15, col, "center", 700);
     });
     if (p.foot) text(p.foot, 120, py0 + ph - 8, 11, P.MID, "center", 500);
-  } else if (kind === "edit8" || kind === "stack" || kind === "knobrow") {
+  } else if (kind === "slots") {
+    drawSlots(p, 6, py0 + (ph - 26) / 2, 228, 26, colOf(P, p.col || "red", P.REC));
+  } else if (kind === "timeline") {
+    drawTimeline(p, 0, py0, 240, ph, colOf(P, p.col || "red", P.REC));
+  } else if (kind === "steps") {
+    drawSteps(p, 0, py0, 240, ph, colOf(P, p.col || "red", P.REC));
+  } else if (kind === "edit8" || kind === "stack" || kind === "knobrow" || kind === "loopmenu") {
     // the dense sound editor: up to 8 parameters (edit8: a wide graphic over two rows of four) or a stack of
     // N rows of four (stack). The layout is designed for the full 240 px screen (header / cards / footer null);
     // with a header, cards or footer it is squeezed vertically into the panel.
@@ -963,10 +1077,11 @@ function renderScreen(scr, palName, S) {
       ctx.restore();
     };
     // the value, on a filled block when hot
-    const cellValue = (c, cx, vy, w, vpx, col, isHot, blockCol) => {
-      const v = fit(String(c.value ?? ""), vpx, w - 6, 700);
+    const cellValue = (c, cx, vy, w, vpx, col, isHot, blockCol, sq) => {   // sq: squeeze a long value instead of cutting it
+      const v = sq ? String(c.value ?? "") : fit(String(c.value ?? ""), vpx, w - 6, 700);
       if (isHot) rr(cx - w / 2 + 3, vy - vpx - 1, w - 6, vpx + 5, 2, blockCol || col);
-      text(v, cx, vy, vpx, isHot ? P.BG : col, "center", 700);
+      if (sq) squeezedText(v, cx, vy, vpx, isHot ? P.BG : col, w - 10);
+      else text(v, cx, vy, vpx, isHot ? P.BG : col, "center", 700);
     };
     // a small horizontal pct bar: from the left, or centre-zero when bipolar (pct 0.5 = zero)
     const hbar = (c, x, w, by, bh, col) => {
@@ -1007,7 +1122,7 @@ function renderScreen(scr, palName, S) {
           ctx.fillStyle = tc; ctx.fillRect(cx - dw / 2, mid - 0.75, dw, 1.5);
           text(fit(de, fpx, dw, 600), cx, mid + fpx + 2, fpx, tc, "center", 600);
         } else if (bigV) {   // the value 7 px larger, vertically centred where glyph and value would be
-          cellValue(c, cx, mid + (vpx + 7) * 0.36, w, vpx + 7, col, isHot, o.hotCol);
+          cellValue(c, cx, mid + (vpx + 7) * 0.36, w, vpx + 7, col, isHot, o.hotCol, !!o.squeeze);
         } else {
           if (c.wave || (c.glyph && c.glyph !== "none")) cellGlyph(c, cx - gw / 2, gy, gw, gh, col);
           else hbar(c, x + 8, w - 16, gy + gh / 2 - 2, 4, col);   // a text cell: its pct as a small bar
@@ -1016,10 +1131,11 @@ function renderScreen(scr, palName, S) {
         if (lit) { ctx.fillStyle = col; ctx.fillRect(x + (RG ? 3 : 4), y + h - 2, w - (RG ? 6 : 8), 2); }
       });
     };
-    // the title line (0-24): title left, white 13 px bold; right right-aligned 11 px grey (not on knobrow)
-    const rw = p.right && kind !== "knobrow" ? tw(p.right, 11, 600) : 0;
+    // the title line (0-24): title left, white 13 px bold; right right-aligned 11 px grey (not on knobrow / loopmenu)
+    const ownTop = kind === "knobrow" || kind === "loopmenu";
+    const rw = p.right && !ownTop ? tw(p.right, 11, 600) : 0;
     if (rw) text(p.right, 232, Y(17), 11, P.MID, "right", 600);
-    if (p.title && kind !== "knobrow") text(fit(p.title, 13, 224 - rw - (rw ? 8 : 0), 700), 8, Y(17), 13, colOf(P, p.titleCol, P.TEXT), "left", 700);
+    if (p.title && !ownTop) text(fit(p.title, 13, 224 - rw - (rw ? 8 : 0), 700), 8, Y(17), 13, colOf(P, p.titleCol, P.TEXT), "left", 700);
 
     if (kind === "knobrow") {
       // a layer screen: a horizontal picker band over one 72 px row of the four knobs (taller glyphs than edit8)
@@ -1052,6 +1168,18 @@ function renderScreen(scr, palName, S) {
       const rs = rowH / full, rowY = py0 + bandH;
       const hc = p.hot != null && p.hot !== "" ? Number(p.hot) : -1;
       cellRow(Array.isArray(p.cells) ? p.cells : [], rowY, rs, true, hc, false, { dash: true, autoBar: true, tall: !ringed, ring: ringed, hotCol: p.hotCol ? colOf(P, p.hotCol, null) : null });
+    } else if (kind === "loopmenu") {
+      // the looper's PLAY menu under the top line: the slot strip (26 px), the mode band (36 px), the middle (the
+      // rest), knobrow's 72 px row of the four knobs (64 with a foot; a long big value squeezed), an optional foot line (14 px)
+      const col = colOf(P, p.col || "red", P.REC), bot = py0 + ph - (p.foot ? 14 : 0);
+      let y = py0;
+      if (p.slots && typeof p.slots === "object") { drawSlots(p.slots, 6, y, 228, 26, col); y += 28; }
+      if (p.mode && typeof p.mode === "object") { drawHPick(p.mode, y, 36, col); y += 36; }
+      const rowH = Math.min(p.foot ? 64 : 72, Math.max(40, Math.round((bot - y) * 0.55))), rowY = bot - rowH;
+      drawMid(p.mid, 0, y, 240, rowY - y, col);
+      const hc = p.hot != null && p.hot !== "" ? Number(p.hot) : -1;
+      cellRow(Array.isArray(p.cells) ? p.cells : [], rowY, rowH / 72, true, hc, false, { dash: true, autoBar: true, tall: true, squeeze: true, hotCol: p.hotCol ? colOf(P, p.hotCol, null) : null });
+      if (p.foot) text(fit(p.foot, 11, 228, 500), 120, py0 + ph - 3, 11, P.MID, "center", 500);
     } else if (kind === "edit8") {
       const wide = p.wide && typeof p.wide === "object" ? p.wide : null;
       const rows = (Array.isArray(p.rows) ? p.rows : []).slice(0, 2);

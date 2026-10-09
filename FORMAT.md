@@ -154,8 +154,66 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
 | `scope` | `root quality sup amp freq` | an oscilloscope wave (React view) |
 | `text` | `title lines` | free lines; a line is `{ t, px, col: theme\|accent\|dim, center, w }` or a string |
 | `loop` | `value label pct rec layers status title right` | the loop page: a ring with the bar count inside, layer rings, a status line |
+| `loopmenu` | `col slots mode mid cells hot hotCol foot` | the looper's PLAY menu under the top line: a slot strip, a horizontal mode picker, a middle (a big text, a `timeline` or a `steps` grid), one row of the four knobs. See **The looper's PLAY menu** |
+| `slots` | `n sel used jump big col` | the slot strip alone (centred in the panel). See **The looper's PLAY menu** |
+| `timeline` | `bars beats pos lanes new free elapsed erase col newCol w h` | the record timeline alone (centred in the panel). See **The looper's PLAY menu** |
+| `steps` | `bars per filled cursor name right col fillCol nameCol w h` | the step grid alone (centred in the panel). See **The looper's PLAY menu** |
 | `edit8` | `title titleCol right wide rows active hot` | the dense sound editor: up to 8 parameters as two rows of four cells (KNOB 1–4 each), an optional full-width graphic (`wide`: an AHDSR envelope, a DX7 envelope, an FM operator envelope or two side by side, an FM algorithm, a filter response or a wave) above them; the `active` row (the one on the knobs) in the knob colours with a bar under each cell, the other row grey. See **Sound editor panels** |
 | `stack` | `title titleCol right cols rows active hot` | N = 1–8 equal rows of four cells under column headings (oscillators, LFOs, the 8-slot mod matrix), a row label at the left; the `active` row in the knob colours, the others grey. See **Sound editor panels** |
+
+### The looper's PLAY menu (`loopmenu`, `slots`, `timeline`, `steps`)
+
+**`loopmenu`** is drawn in the normal panel under the header (`header` with the slot's name, `loop` the corner dial,
+`cards: null`, `footer: null`); with the panel at y 28–240 it lays out top to bottom: the slot strip 28–54, the mode
+band 56–92, the middle (the rest), the knob row (72 px; 64 px when there is a `foot`), the `foot` line (11 px grey,
+centred, baseline 237). `col` is the menu's colour (default `red`; the strip, the mode marks and the middle take it
+unless they set their own). Every part is optional.
+
+- `slots` `{ n, sel, used, jump, big, col }`: `n` cells (default 10, 1-based) along the band's bottom, 3 px apart;
+  a `used` slot (holds a loop) is filled grey with its number in the background colour, an empty one a 1.5 px grey
+  outline with a dim number; `sel` is in `col` (filled when used, a 2 px outline when empty), 5 px taller upward, its
+  number 13 px heavy. `jump`: the selection moves from `sel` to `jump` (the Advance mode): `jump` is drawn as the
+  selected cell and a 2 px hop arrow under the cells runs from `sel` to it. `big`: a name (20 px bold in `col`) at the
+  left, the cells take the rest of the width.
+- `mode` `{ items, sel, col, size }`: a horizontal picker: `items[sel]` (strings or `{ t }`) centred, bold, `size`
+  (default 28) squeezed to 150 px, in `col`; the neighbours 13 px dim at x 6 / 234 (hidden without room); the position
+  marks under it in `col`.
+- `mid`: a string or `{ t, col, sub, size }` — the text big (up to 40 px bold, squeezed to the width) in `col`, `sub`
+  a 12 px grey line under it — or a `timeline` or `steps` object (below).
+- `cells` / `hot` / `hotCol`: the knob row exactly as `knobrow`'s (label 10 px, a 48 × 36 glyph box, value 13 px bold,
+  the knob-colour bar; `null` = a dim `–`; `big: true` = the value 20 px, squeezed when it is too wide).
+
+**`timeline`** `{ bars, beats, pos, lanes, new, free, elapsed, erase, col, newCol, w, h }`: the record timeline, a strip
+`w` × `h` (default 200 × 40) centred in its band. Positions are in bars from the loop's start (`2.3` = 30 % into bar 3).
+`bars` boxes (surface fill, a 1 px grey outline, 2 px apart) with `beats` ticks (default 4) at the top and bottom edges;
+`lanes` = the layers' events, oldest first, one lane each, each event a 3 px mark; the newest lane in `col`, each older
+one 30 % further toward the background (at most 62 %); `new` = the take being recorded, on its own lane after them in
+`newCol` (default `col`), and the `lanes` count one step older; at most 4 lanes (the oldest dropped). `pos` = the playhead
+(a 2 px line in `col` past the strip's edges with a small triangle on top). `erase: [a, b]` = a held span (the Replace
+mode): a dark band in `col` from `a` to `b` with a 1.5 px edge at `a`; the `lanes` events inside it are struck (grey with a
+red ×). `free: true`: the bars are drawn as they pass (`pos` gives the current bar, drawn only up to the playhead; bars
+are 1/4 of the strip wide, four across, then the current one stays at the right edge and the earlier ones scroll
+left). `elapsed` (`"0:07"`) is a 13 px grey line under the strip.
+
+**`steps`** `{ bars, per, filled, cursor, name, right, col, fillCol, nameCol, w, h }`: the step grid, `w` × `h` (default
+200 × 40): one row per bar (at most four: the four-bar page holding the cursor), `per` steps across (default 16; a 2 px
+extra gap every four when `per` is a multiple of 4); steps are 1-based; a `filled` step (holds a chord) in `fillCol`
+(default `col`), the others grey; `cursor` a 2 px outline in `col` with a 1 px background ring. `name` (the cursor
+step's chord, 15 px bold, `nameCol` default text) under the grid at its left, `right` (12 px grey) at its right.
+
+```json
+"panel": { "kind": "loopmenu", "col": "red",
+  "slots": { "n": 10, "sel": 3, "used": [1, 3, 4] },
+  "mode": { "items": ["Overwrite", "Advance", "Overdub", "Replace", "Step"], "sel": 2, "col": "white" },
+  "mid": { "kind": "timeline", "bars": 4, "beats": 4, "pos": 2.3, "lanes": [[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5], [0.25, 1.75, 3.25]], "new": [2.0, 2.25] },
+  "cells": [ {"label": "Quantize", "value": "1/16", "glyph": "echoes", "pct": 0.8}, {"label": "Count-in", "value": "On", "glyph": "gate", "pct": 1},
+             {"label": "Level", "value": "100", "glyph": "bar", "pct": 1}, {"label": "Keys", "value": "Play", "big": true} ],
+  "hot": null, "foot": "" }
+```
+
+The `slots`, `timeline` and `steps` kinds draw the same part alone, centred vertically in the panel (default colour
+red). [examples/choralroot-fm1-looper-mockups.json](examples/choralroot-fm1-looper-mockups.json) is the ChoralRoot
+PLAY menu built from them.
 
 ### Sound editor panels (`edit8`, `stack`, `knobrow`)
 
