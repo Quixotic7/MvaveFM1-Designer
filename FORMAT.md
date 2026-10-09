@@ -118,13 +118,16 @@ hardware (idle, a chord held, a layer button held, the loop recording…). Every
   drawn as keycap chips (Felucca's footer). `null` removes the footer.
 - `ring` 0–1 draws Orchid's ring progress indicator: a dotted circle round the screen edge with the
   progress solid (`ringRec` in red; `0` draws just the track).
-- `loop` `{ style, pos, pct, bars, on, col }` a quieter loop progress indicator (drawn after the footer,
+- `loop` `{ style, pos, pct, bars, on, col, rec, dot }` a quieter loop progress indicator (drawn after the footer,
   under `message`); `pct` 0–1 (clamped), `col` the progress colour (default red), `on: true` the downbeat
   frame. `style: "bar"`: a stripe the full width, `pos: "top"` (default) y 25–28 (between header and panel)
   or `"bottom"` y 236–240; the track dim, the elapsed part from the left in `col`; `bars` > 1 cuts 2 px
   background gaps at x = 240·k/bars; `on` adds a 2 px white tick at the tip. `"dial"`: a mini ring r 8 at
   (229, 12), 3 px, dotted track, the arc clockwise from 12 o'clock (5 px when `on`: the downbeat pulse
-  frame; the track stays 3 px); the header's `right` moves 22 px left.
+  frame; the track stays 3 px); the header's `right` moves 22 px left. The dial's REC looks: `rec: "armed"`
+  (REC armed: the track, the arc if `pct` > 0, the REC dot), `"rec"` (the first take recording: the track in `col`
+  too), `"od"` (overdubbing: as armed); the REC dot is a disc r 3 at the dial's centre in `col`, `dot: false` its
+  blink's dark half (default: lit).
   `"mark"`: an 8×8 square at x 226–234, y 8–16, filled when `on`, else a 2 px outline; `right` moves 16 px
   left. Any other style draws nothing; dial and mark draw even with `header: null`.
 - `message` draws an inverted message box over the panel (`messageCol`); `ringCol` colours the ring.

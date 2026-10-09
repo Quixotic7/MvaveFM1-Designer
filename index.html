@@ -1308,10 +1308,11 @@ function renderScreen(scr, palName, S) {
       if (pct > 0) { ctx.fillStyle = col; ctx.fillRect(0, y, tip, bh); }
       if (bars > 1) { ctx.fillStyle = P.BG; for (let k = 1; k < bars; k++) ctx.fillRect(240 * k / bars - 1, y, 2, bh); }
       if (L.on) { ctx.fillStyle = P.TEXT; ctx.fillRect(Math.min(238, Math.max(0, tip - 1)), y, 2, bh); }
-    } else if (L.style === "dial") {
+    } else if (L.style === "dial") { // rec: "armed" | "rec" | "od" adds the REC dot (r 3, `dot: false` = the blink's dark half); "rec" draws the track in col
       ctx.save(); ctx.lineWidth = 3; ctx.lineCap = "butt";
-      ctx.strokeStyle = P.LINE; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(229, 12, 8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = L.rec === "rec" ? col : P.LINE; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(229, 12, 8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
       if (pct > 0) { ctx.strokeStyle = col; ctx.lineWidth = L.on ? 5 : 3; ctx.beginPath(); ctx.arc(229, 12, 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct); ctx.stroke(); }
+      if (L.rec && L.dot !== false) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(229, 12, 3, 0, Math.PI * 2); ctx.fill(); }
       ctx.restore();
     } else if (L.style === "mark") {
       if (L.on) { ctx.fillStyle = col; ctx.fillRect(226, 8, 8, 8); }
